@@ -6,7 +6,6 @@ import com.google.protobuf.Timestamp;
 
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.Objects;
 
 public class PlanPhotoData {
 
@@ -14,8 +13,6 @@ public class PlanPhotoData {
     private String memo;
     private String time;
     private int time_i;
-
-    private String filename;
     private String Id;
     private String imageUrl;
     private Timestamp creationTime;
@@ -24,8 +21,7 @@ public class PlanPhotoData {
 
     private Boolean check=false;
 
-    public PlanPhotoData(String filename, String Id, String imageUrl, Timestamp date){
-        this.filename=filename;
+    public PlanPhotoData(String Id, String imageUrl, Timestamp date){
         this.Id=Id;
         this.imageUrl = imageUrl;
         this.creationTime = date;
@@ -42,10 +38,6 @@ public class PlanPhotoData {
         this.time = time;
         this.memo = memo;
         this.time_i = time_i;
-    }
-    // for Photo delete Request
-    public PlanPhotoData(String Id){
-        this.Id=Id;
     }
 
 
@@ -68,11 +60,9 @@ public class PlanPhotoData {
     public Long getCreationTimeLong() { return creationTimeLong; }
     public void setCreationTimeLong(Long creationTimeLong) { this.creationTimeLong = creationTimeLong; }
 
+
     public Boolean getCheck() { return check; }
     public void setCheck(Boolean check) { this.check = check; }
-
-    public String getFilename() { return filename; }
-    public void setFilename(String filename) { this.filename = filename; }
 
     public String changeTimeToDate() {
         Calendar cal = Calendar.getInstance(Locale.KOREAN);

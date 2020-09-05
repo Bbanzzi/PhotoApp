@@ -47,7 +47,7 @@ public class PlanPagerAdapter extends FragmentStatePagerAdapter {
         PlanFragment fragment = (PlanFragment) object;
         String title = fragment.getTitle();
         int position = titles.indexOf(title);
-        Log.i(TAG, String.valueOf(position));
+        //Log.i(TAG, String.valueOf(position));
 
         if (position >= 0) {
             fragment.update(realTimeDataArrayList.get(position));

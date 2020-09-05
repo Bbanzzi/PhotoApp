@@ -3,7 +3,6 @@ package com.example.photoapp.PlanMain.PhotoWork;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
@@ -19,12 +18,10 @@ import com.google.photos.library.v1.PhotosLibraryClient;
 import com.google.photos.library.v1.proto.BatchCreateMediaItemsResponse;
 import com.google.photos.library.v1.proto.NewMediaItem;
 import com.google.photos.library.v1.proto.NewMediaItemResult;
-import com.google.photos.library.v1.proto.SimpleMediaItem;
 import com.google.photos.library.v1.upload.UploadMediaItemRequest;
 import com.google.photos.library.v1.upload.UploadMediaItemResponse;
 import com.google.photos.library.v1.util.NewMediaItemFactory;
 import com.google.photos.types.proto.MediaItem;
-import com.google.photos.types.proto.MediaMetadata;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 
@@ -32,14 +29,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.UUID;
 
 public class PhotoUploadRunnable implements Runnable {
 
@@ -67,7 +61,6 @@ public class PhotoUploadRunnable implements Runnable {
     private GooglePhotoReference googlePhotoReference;
 
     private List<String> filepaths;
-    private List<String> filename=new ArrayList<>();
 
     //전에 어디까지 저장하다가 껐는지를 확인하기 위함
     private String planSetting; //TimeStamp와 title합쳐서 이용 다른 방안 있으면 추천?
@@ -95,7 +88,6 @@ public class PhotoUploadRunnable implements Runnable {
     @SuppressLint("RestrictedApi")
     public void getPhotosAccordingToDate(Calendar startDates, Calendar endDates) {
 
-        // Exif 정보는 모든 사진의 시간 GMT 기준으로 생각함
         startDates.setTimeZone(TimeZone.getTimeZone("GMT"));
         startDates.set(Calendar.HOUR_OF_DAY, 0);
         startDates.set(Calendar.MINUTE, 0);
@@ -111,7 +103,8 @@ public class PhotoUploadRunnable implements Runnable {
         Long startDatesLong= startDates.getTimeInMillis();
         Long endDatesLong= endDates.getTimeInMillis();
 
-        Log.i(TAG,"Start Dates :"  +  startDatesLong + " End Dates :"+ endDatesLong);
+        Log.i(TAG, String.valueOf(startDatesLong));
+        Log.i(TAG,String.valueOf(startDates.getTime()) + endDates.getTime());
         filepaths=new ArrayList<>();
         // 어플 쓰는 경우 dateTime이 지워짐
         //selectionArgs= new String[]{String.valueOf(startDates.getTimeInMillis()), String.valueOf(endDates.getTimeInMillis())};
@@ -130,43 +123,23 @@ public class PhotoUploadRunnable implements Runnable {
         if (cur.moveToFirst()) {
             String Id;
             String Date_added;
-            String[] FileName;
 
             int IdColumn = cur.getColumnIndex(
                     MediaStore.Images.Media._ID);
             int DateColumn= cur.getColumnIndex(MediaStore.Images.Media.DATE_ADDED );
-            int FileNameColumn=cur.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
 
             do {
                 // Get the field values
                 Id = cur.getString(IdColumn);
                 Date_added = cur.getString(DateColumn);
-                FileName = cur.getString(FileNameColumn).split("\\.");
                 //Path of Images
                 Uri uriImage = Uri.withAppendedPath(images, String.valueOf(Id));
                 try {
-                    //InputStream inputStream = context.getContentResolver().openInputStream(uriImage);
-                    ExifInterface exif = new ExifInterface(PathUtils.getPath(this.context, uriImage));
-                    String uniqueID = UUID.randomUUID().toString();
-                    // 나라 or 위치에 따른 timezone
-                    exif.setAttribute(ExifInterface.TAG_OFFSET_TIME, "+09:00");
-                    exif.setAttribute(ExifInterface.TAG_IMAGE_UNIQUE_ID, uniqueID);
-                    exif.saveAttributes();
-
-                    Log.i(TAG, "DATe_added + " + Date_added  + "photo Time is " + exif.getDateTime() + " Paths " + PathUtils.getPath(this.context, uriImage));
-                          /*
-                    if( startDatesLong.compareTo( Long.parseLong(Date_added)) <= 0 && endDatesLong.compareTo(Long.parseLong(Date_added)) >0 ) {
-                        filepaths.add(PathUtils.getPath(this.context, uriImage));
-                        Log.i(TAG, "photo Time is " +Date_added + " Paths " + PathUtils.getPath(this.context, uriImage));
-                        count++;
-                    }
-                    */
-
+                    InputStream inputStream = context.getContentResolver().openInputStream(uriImage);
+                    ExifInterface exif = new ExifInterface(inputStream);
                     if( startDatesLong.compareTo(exif.getDateTime()) <= 0 && endDatesLong.compareTo(exif.getDateTime()) >0 ) {
                         filepaths.add(PathUtils.getPath(this.context, uriImage));
-                        //Filename - uuid
-                        filename.add( FileName[0] + "-" + uniqueID + "." + FileName[1] );
-                        Log.i(TAG, "photo Time is " + exif.getDateTime() + " Paths " + PathUtils.getPath(this.context, uriImage));
+                        Log.i(TAG, PathUtils.getPath(this.context, uriImage));
                         count++;
                     }
 
@@ -214,8 +187,9 @@ public class PhotoUploadRunnable implements Runnable {
                     // If the upload is successful, get the uploadToken
                     String uploadToken = uploadResponse.getUploadToken().get();
                     NewMediaItem newMediaItem = NewMediaItemFactory
-                            .createNewMediaItem(uploadToken,filename.get(index), " ");
+                            .createNewMediaItem(uploadToken, "test", "test");
                     List<NewMediaItem> newItems = Arrays.asList(newMediaItem);
+
                     BatchCreateMediaItemsResponse response = photosLibraryClient.batchCreateMediaItems(planItem.getAlbumId(),newItems);
                     for (NewMediaItemResult itemsResponse : response.getNewMediaItemResultsList()) {
                         Status status = itemsResponse.getStatus();
