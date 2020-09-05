@@ -51,7 +51,6 @@ public class PhotoRequestSupplier implements Supplier<List<List<PlanPhotoData>>>
     private void getPhotoUrl(String albumId) {
         try {
 
-
             InternalPhotosLibraryClient.SearchMediaItemsPagedResponse response = GooglePhotoReference.getPhotosLibraryClient().searchMediaItems(albumId);
 
             for (MediaItem item : response.iterateAll()) {

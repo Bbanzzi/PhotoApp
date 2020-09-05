@@ -44,9 +44,7 @@ public class PlanPhotoData {
         this.time_i = time_i;
     }
     // for Photo delete Request
-    public PlanPhotoData(String Id){
-        this.Id=Id;
-    }
+    public PlanPhotoData(String Id){ this.Id=Id; }
 
 
     public String getPlace() { return place; }
@@ -67,6 +65,7 @@ public class PlanPhotoData {
 
     public Long getCreationTimeLong() { return creationTimeLong; }
     public void setCreationTimeLong(Long creationTimeLong) { this.creationTimeLong = creationTimeLong; }
+
 
     public Boolean getCheck() { return check; }
     public void setCheck(Boolean check) { this.check = check; }

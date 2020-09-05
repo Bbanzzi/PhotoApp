@@ -48,6 +48,7 @@ import com.example.photoapp.PlanMain.PhotoWork.PhotoSortRequest;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoUploadRunnable;
 import com.example.photoapp.PlanSchedule.Cell;
 import com.example.photoapp.PlanSchedule.EditPlanScheduleActivity;
+import com.example.photoapp.PlanSchedule.EditPlanScheduleChange;
 import com.example.photoapp.PlanSchedule.PlanScheduleActivity;
 import com.example.photoapp.PlanSchedule.RealtimeData;
 import com.example.photoapp.R;
@@ -63,7 +64,10 @@ import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.ShortDynamicLink;
 import com.google.protobuf.Timestamp;
 
+import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -98,6 +102,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     public static boolean downLoadOnlyWIFI = true;
     public static boolean messageCheck = false;
     public static int day_check = 0;
+    public static int time_check;
 
     public static String sPref = null;
 
@@ -118,10 +123,19 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private static boolean MyDeletion=false;   // 내가 사진을 지운 경우 firebase에서 다시 읽어오는 것보다 바로 삭제하기
     private static boolean AllListingPhotos=false; // 모든 사진을 처음 다 정렬함
 
+    public static boolean FIRST_READ_MAIN = true;
+    public static boolean CHECK_EDIT_MAIN = false;
+    public static boolean CHECK_DEL_MAIN = false;
+    public static boolean CHECK_CHA_MAIN = false;
+    public static int DAY_CHECK_firebase = 1;
+    Bundle saveInstanceState_re;
+
     @RequiresApi(api = Build.VERSION_CODES.N)
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_planmain);
+
+        saveInstanceState_re = savedInstanceState;
 
         //onCreate와 onStart 둘다 하는데 충돌이 없을까?
         updateConnectedFlags();
@@ -157,12 +171,52 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         }
         Log.i(TAG, String.valueOf(realTimeDataArrayList.get(1).size()));
 
+
+
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        receiver = new NetworkReceiver();
+        this.registerReceiver(receiver, filter);
+
+    }
+
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        Log.i(TAG, "----onPause main----");
+    }
+
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG, "----onDestroy main----");
+        FIRST_READ_MAIN = true;
+        DAY_CHECK_firebase = 1;
+        //listener 제거하기기
+       if (receiver != null) {
+            this.unregisterReceiver(receiver);
+        }
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        Log.i(TAG, "----onResume main----");
+    }
+
+    @Override
+    public void onStart () {
+        super.onStart();
+        DAY_CHECK_firebase = 1;
         readPlanSchedule(planItem.getKey(), new OnGetDataListener() {
             @Override
             public void onStart() { }
+
             @Override
             public void onSuccess() {
                 // 읽어왔을때 작업할 것
+                Log.i("TAG","----adapter.onSuccess----");
                 ReadDbSchedule=true;
                 adapter.notifyDataSetChanged(); // pagerstate의 getitemposition이 실행됨
             }
@@ -221,7 +275,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         adapter = new PlanPagerAdapter(getSupportFragmentManager(), realTimeDataArrayList ,1);
         adapter.setDays(days);
         //뷰 페이저
-        viewPager.setOffscreenPageLimit(3);
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
@@ -237,43 +290,24 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             }
         });
 
-        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-        receiver = new NetworkReceiver();
-        this.registerReceiver(receiver, filter);
 
-    }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.i(TAG, "----onDestroy main----");
-        if (receiver != null) {
-            this.unregisterReceiver(receiver);
-        }
-    }
-
-    @Override
-    public void onResume(){
-        super.onResume();
-
-    }
-
-    @Override
-    public void onStart () {
-        super.onStart();
+        Log.i(TAG, "----onStart main----" + FIRST_READ_MAIN);
         // Gets the user's network preference settings
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-        // Retrieves a string value for the preferences. The second parameter
-        // is the default value to use if a preference value is not found.
         sPref = sharedPrefs.getString("listPref", "Wi-Fi");
 
         updateConnectedFlags();
 
-        //if(refreshDisplay){
-        //    loadPage();
-        // }
+        /*
+        if(PlanScheduleActivity.CHECK_ACCESS_PLANSCH){
+            DAY_CHECK_firebase = 1;
+            Log.i("TAG", "----onRestart Main----");
+            PlanScheduleActivity.CHECK_ACCESS_PLANSCH = false;
+            onRestart();
+        }
 
+         */
     }
 
 
@@ -338,7 +372,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         } else {
             Log.e("TAG","----loadPage() error in PlanMainActivity.class----");
         }
-
 
     }
 
@@ -451,41 +484,107 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     }
 
     // data 읽어오는 비동기화 작업
-    public void readPlanSchedule(String child, final OnGetDataListener listener) {
-        listener.onStart();
-        dbReference.getDbPlanScheduleRef().child(child).orderByChild("time").addListenerForSingleValueEvent(new ValueEventListener() {
+    public void readPlanSchedule(String child, OnGetDataListener listener1) {
+        listener1.onStart();
+        if(PlanScheduleActivity.CHECK_ACCESS_PLANSCH) {
+            realTimeDataArrayList.clear();
+            for (int i = 0; i < days; i++) {
+                ArrayList<RealtimeData> EmptyRealTimeData = new ArrayList<RealtimeData>();
+                EmptyRealTimeData.add(new RealtimeData());
+                realTimeDataArrayList.add(EmptyRealTimeData);
+            }
+        }
+        Log.i("TAG", "----readPlanSchedule----");
+        dbReference.getDbPlanScheduleRef().child(child).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if(dataSnapshot.exists()){
-                    int count=1;
-                    for(DataSnapshot days : dataSnapshot.getChildren()) {
-                        while(!days.getKey().contains(String.valueOf(count))) { // 비어 있는곳은 넘어가서 업데이트 함
-                            count++;
-                        }
-                        for(DataSnapshot data : days.getChildren()) {
-                            RealtimeData realTimeData = data.getValue(RealtimeData.class);
-                            realTimeDataArrayList.get(count-1).add(realTimeData);
-                        }
-                        count++;
-                        listener.onSuccess();
-                    }
-                }else {
-                    listener.onSuccess();
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if(!snapshot.exists()){
+                    ReadDbSchedule=true;
                 }
             }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
 
+            }
+        });
+        dbReference.getDbPlanScheduleRef().child(child).//orderByChild("time").
+        addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String previousChildName) {
+                Log.i("TAG", "----onChildChanged----");
+                if(CHECK_DEL_MAIN || CHECK_CHA_MAIN){
+                    int i = 0;
+                    for( RealtimeData searchData : realTimeDataArrayList.get(day_check) ){
+                        if(searchData.getTime() == time_check){
+                            realTimeDataArrayList.get(day_check).remove(i);
+                            if(CHECK_DEL_MAIN) {
+                                listener1.onSuccess();
+                            }
+                            CHECK_DEL_MAIN = false;
+                            break;
+                        }
+                        i++;
+                    }
+                }
+                int inDex = Character.getNumericValue(dataSnapshot.getKey().charAt(0));
+                if(dataSnapshot.exists() && (CHECK_EDIT_MAIN || CHECK_CHA_MAIN)){
+                    int i = 1;
+                    for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                        RealtimeData realtimeData = snapshot.getValue(RealtimeData.class);
+                        try {
+                            if (Integer.parseInt(snapshot.getKey()) != realTimeDataArrayList.get(inDex - 1).get(i).getTime()) {
+                                realTimeDataArrayList.get(inDex - 1).add(i, realtimeData);
+                                listener1.onSuccess();
+                                CHECK_EDIT_MAIN = false;
+                                CHECK_CHA_MAIN = false;
+                                break;
+                            }
+                        }catch (IndexOutOfBoundsException e){
+                            CHECK_EDIT_MAIN = false;
+                            CHECK_CHA_MAIN = false;
+                            realTimeDataArrayList.get(inDex-1).add(realtimeData);
+                            listener1.onSuccess();
+                        }
+
+                        i++;
+                    }
+
+                }
+            }
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName){
+                Log.i("TAG", "----onChildAdded---- : " + snapshot.getKey() );
+                if(snapshot.exists() && (FIRST_READ_MAIN || PlanScheduleActivity.CHECK_ACCESS_PLANSCH)) {
+                    if(!snapshot.getKey().contains(String.valueOf(DAY_CHECK_firebase))){
+                        DAY_CHECK_firebase++;
+                    }
+                    for (DataSnapshot snapshot1 : snapshot.getChildren()) {
+                        RealtimeData realtimeData1 = snapshot1.getValue(RealtimeData.class);
+                        realTimeDataArrayList.get(DAY_CHECK_firebase-1).add(realtimeData1);
+                       }
+                    listener1.onSuccess();
+                    DAY_CHECK_firebase++;
+                }
+            }
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                Log.i("TAG","----onChildRemoved----");
+
+
+            }
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                Log.i("TAG","----onChildMoved----");
+            }
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                listener.onFailed(databaseError);
+                listener1.onFailed(databaseError);
+                Log.i("TAG","----onCancelled----");
             }
         });
     }
 
-    public void clickGoEditPlan() {
-
-    }
-
-    public void clickGoPlusPlan(View view){
+     public void clickGoPlusPlan(View view){
         Intent intent = new Intent(PlanMainActivity.this, EditPlanScheduleActivity.class);
         intent.putExtra("day_check",day_check);
         startActivityForResult(intent,RC_PLAN_MAIN);
@@ -495,7 +594,49 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == RC_PLAN_MAIN){
+            if(resultCode == EditPlanScheduleChange.RC_EDIT_PLAN_DEL){
+                Log.i("TAG","----onActivityResult:MainDEL----");
+
+                CHECK_DEL_MAIN = true;
+                String time_i = String.valueOf(data.getExtras().getInt("time"));
+                String day = PlanScheduleActivity.col_day[day_check];
+                dbReference.getDbPlanScheduleRef().child(planItem.getKey()).child(day).child(time_i).removeValue();
+
+
+            }
+            if(resultCode == EditPlanScheduleChange.RC_EDIT_PLAN_CHA){
+                Log.i("TAG","----onActivityResult:MainCHA----");
+
+                CHECK_CHA_MAIN = true;
+                String hourVal = data.getExtras().getString("hourVal");
+                String minVal =  data.getExtras().getString("minVal");
+                String placeVal = data.getExtras().getString("placeVal");
+                String memoVal = data.getExtras().getString("memoVal");
+                String spinVal = data.getExtras().getString("spinVal");
+                String time_orgin = String.valueOf(data.getExtras().getInt("time"));
+                int time_add = 0;
+                assert spinVal != null;
+                if(spinVal.equals("오전")) {
+                    if(Integer.parseInt(hourVal) == 0){ hourVal = "0"; }
+                    time_add = Integer.parseInt(hourVal) * 60 + Integer.parseInt(minVal);
+                }else{
+                    if(Integer.parseInt(hourVal) == 12){ hourVal = "0"; }
+                    time_add = (Integer.parseInt(hourVal)+12) * 60 + Integer.parseInt(minVal);
+                    hourVal = String.valueOf( Integer.parseInt(hourVal) + 12);
+                }
+                String day = PlanScheduleActivity.col_day[day_check];
+                String time_i = String.valueOf(time_add);
+                dbReference.getDbPlanScheduleRef().child(planItem.getKey()).child(day).child(time_orgin).removeValue();
+
+                HashMap<String, Object> dataN = new HashMap<>();
+                RealtimeData data_edit = new RealtimeData(placeVal, memoVal, hourVal, minVal, day_check + 1);
+                dataN.put(String.valueOf(time_add), data_edit);
+                dbReference.getDbPlanScheduleRef().child(planItem.getKey()).child(day).updateChildren(dataN);
+            }
             if(resultCode == EditPlanScheduleActivity.RC_EDIT_PLAN){
+                Log.i("TAG","----onActivityResult:MainPLAN----");
+                CHECK_EDIT_MAIN = true;
+
                 String hourVal = data.getExtras().getString("hourVal");
                 String minVal =  data.getExtras().getString("minVal");
                 String placeVal = data.getExtras().getString("placeVal");
@@ -504,9 +645,12 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 int time_add = 0;
                 assert spinVal != null;
                 if(spinVal.equals("오전")) {
+                    if(Integer.parseInt(hourVal) == 0){ hourVal = "0"; }
                     time_add = Integer.parseInt(hourVal) * 60 + Integer.parseInt(minVal);
                 }else{
+                    if(Integer.parseInt(hourVal) == 12){ hourVal = "0"; }
                     time_add = (Integer.parseInt(hourVal)+12) * 60 + Integer.parseInt(minVal);
+                    hourVal = String.valueOf( Integer.parseInt(hourVal) + 12);
                 }
 
                 dbReference_2 = (DatabaseReferenceData) getApplication();
@@ -518,11 +662,11 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 dataN.put(String.valueOf(time_add), data_edit);
                 dbDataReference_2.child(day).updateChildren(dataN);
 
-                adapter.notifyDataSetChanged();
-                
             }
         }
     }
+
+
 
     public interface OnGetDataListener {
         public void onStart();
@@ -533,8 +677,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void listingAllImage() throws ExecutionException, InterruptedException {
 
-        GooglePhotoReference googlePhotoReference = (GooglePhotoReference) getApplication();
-        Context context = this;
+        GooglePhotoReference googlePhotoReference=(GooglePhotoReference) getApplication();
+        Context context=this;
         PhotoUploadRunnable photoUploadRunnable = new PhotoUploadRunnable(this, planItem, googlePhotoReference);
         PhotoRequestSupplier photoRequestSupplier = new PhotoRequestSupplier(context, planItem, googlePhotoReference);
         CompletableFuture.runAsync(photoUploadRunnable);
@@ -645,6 +789,15 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         Toast.makeText(getApplicationContext(), "message complete", Toast.LENGTH_SHORT).show();
 
+    }
+
+    public void startEditPlanWithClick(String place, String memo, int time){
+        Intent intent = new Intent(PlanMainActivity.this, EditPlanScheduleChange.class);
+        intent.putExtra("place",place);
+        intent.putExtra("memo",memo);
+        intent.putExtra("hourmin",time);
+        time_check = time;
+        startActivityForResult(intent,RC_PLAN_MAIN);
     }
 
 
@@ -768,28 +921,19 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 }
                 listener.onSuccess();
             }
-
             @Override
             public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
             }
-
             @Override
             public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-
             }
-
             @Override
             public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-
             }
         });
-        //listener.onStart();
     }
 
     public interface onKeyBackPressedListener {
@@ -810,6 +954,14 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             super.onBackPressed();
         }
     }
+
+    private final static Comparator<RealtimeData> timeComparator = new Comparator<RealtimeData>() {
+        private final Collator collator = Collator.getInstance();
+        @Override
+        public int compare(RealtimeData o1, RealtimeData o2) {
+            return collator.compare(o1.getTime(),o2.getTime());
+        }
+    };
 
 
 

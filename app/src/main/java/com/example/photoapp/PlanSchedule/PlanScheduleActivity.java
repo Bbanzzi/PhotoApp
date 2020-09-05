@@ -28,6 +28,7 @@ import com.evrencoskun.tableview.TableView;
 import com.evrencoskun.tableview.listener.ITableViewListener;
 import com.example.photoapp.Data.DatabaseReferenceData;
 import com.example.photoapp.PlanList.PlanItem;
+import com.example.photoapp.PlanMain.PlanMainActivity;
 import com.example.photoapp.R;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -95,6 +96,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
     TableView.LayoutParams params_table;
     public static int pos_edit = 0;
     private static final int RC_PlAN_SCH = 1010;
+    public static boolean CHECK_ACCESS_PLANSCH;
 
     LinearLayout lin_table;
     LinearLayout lin_frag;
@@ -104,11 +106,12 @@ public class PlanScheduleActivity extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_plan_first);
 
+        PlanMainActivity.FIRST_READ_MAIN = false;
+        CHECK_ACCESS_PLANSCH = true;
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         initData();
         onCreateView();
         setActionBar_create();
-
 
 
         lin_frag = (LinearLayout) findViewById(R.id.lin_frame);
@@ -122,6 +125,13 @@ public class PlanScheduleActivity extends AppCompatActivity{
         downUp_animation.setAnimationListener(animationListener);
         upDown_animation.setAnimationListener(animationListener);
 
+    }
+
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+        CHECK_ACCESS_PLANSCH = false;
+        Log.i("TAG", "----onDestroy planSchedule----");
     }
 
     private void setActionBar_create() {
@@ -227,6 +237,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
         readData(refDatabase, new OnGetDataListener() {
             @Override
             public void onSuccess(DataSnapshot dataSnapshot) {
+                Log.i("TAG","----onSuccess : PlanSch----");
                 myTableViewAdapter.setCellItems(mCellList);
             }
             @Override
@@ -252,6 +263,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                Log.i("TAG","----onDataChange : PlanSch----");
                 for (DataSnapshot snapshot_1 : dataSnapshot.getChildren()){
                     for (DataSnapshot snapshot_2 : snapshot_1.getChildren()){
                         RealtimeData dataReal = snapshot_2.getValue(RealtimeData.class);
@@ -430,6 +442,26 @@ public class PlanScheduleActivity extends AppCompatActivity{
             //알림 형식으로 바꾸는게?
         }
 
+        //Intent intent = new Intent(PlanScheduleActivity.this, EditPlanScheduleChange.class);
+        //intent.putExtra("position",pos);
+        //intent.putParcelableArrayListExtra("cell_edit",Cell_change);
+        /*
+        ArrayList<Integer> time_val = mCellList.get(row_pos).get(col_pos).getTime();
+        int time_i = time_val.get(pos);
+        String child_name = col_day[col_pos] + time_i;
+        mCellList.get(row_pos).get(col_pos).delPlace(pos);
+        mCellList.get(row_pos).get(col_pos).delTime(pos);
+        dbDataReference_1.child(col_day[col_pos]).child(child_name).removeValue();
+
+        myTableViewAdapter.setCellItems(mCellList);
+        Cell_edit = mCellList.get(row_pos).get(col_pos);
+        getSupportFragmentManager().popBackStack();
+        getSupportFragmentManager().beginTransaction().replace(R.id.frame_contain_in, new PlaceWindowFragment(Cell_edit))
+                .addToBackStack(null)
+                .commit();
+        //Cell_edit 값이 null일때 생각해야함
+
+         */
     }
 
     @Override
@@ -444,14 +476,19 @@ public class PlanScheduleActivity extends AppCompatActivity{
                 String placeVal = data.getExtras().getString("placeVal");
                 String memoVal = data.getExtras().getString("memoVal");
                 String spinVal = data.getExtras().getString("spinVal");
-                int time_add = 0;
-                assert spinVal != null;
-                if(spinVal.equals("오전")) {
+                int time_add;
+                if(spinVal.equals("오전")){
+                    if(Integer.parseInt(hourVal) == 0){
+                        hourVal = "0";
+                    }
                     time_add = Integer.parseInt(hourVal) * 60 + Integer.parseInt(minVal);
                 }else{
-                    time_add = (Integer.parseInt(hourVal)+12) * 60 + Integer.parseInt(minVal);
+                    if(Integer.parseInt(hourVal) == 12){
+                        hourVal = "0";
+                    }
+                    time_add = ( Integer.parseInt(hourVal) + 12 ) * 60 + Integer.parseInt(minVal);
+                    hourVal = String.valueOf( Integer.parseInt(hourVal) + 12);
                 }
-
 
                 //제거하고 추가하는 방법이용
                 ArrayList<Integer> time_val_del = mCellList.get(row_pos).get(col_pos).getTime();
@@ -513,14 +550,18 @@ public class PlanScheduleActivity extends AppCompatActivity{
                     String placeVal = data.getExtras().getString("placeVal");
                     String memoVal = data.getExtras().getString("memoVal");
                     String spinVal = data.getExtras().getString("spinVal");
-                    int t=0;
-                    assert spinVal != null;
-                    if(spinVal.equals("오전")) {
-                        t = Integer.parseInt(hourVal) * 60
-                                + Integer.parseInt(minVal);
+                    int t;
+                    if(spinVal.equals("오전")){
+                        if(Integer.parseInt(hourVal) == 0){
+                            hourVal = "0";
+                        }
+                        t = Integer.parseInt(hourVal) * 60 + Integer.parseInt(minVal);
                     }else{
-                        t = (Integer.parseInt(hourVal)+12) * 60
-                                + Integer.parseInt(minVal);
+                        if(Integer.parseInt(hourVal) == 12){
+                            hourVal = "0";
+                        }
+                        t = ( Integer.parseInt(hourVal) + 12 ) * 60 + Integer.parseInt(minVal);
+                        hourVal = String.valueOf( Integer.parseInt(hourVal) + 12);
                     }
 
                     //upload data to firebase database
@@ -530,9 +571,9 @@ public class PlanScheduleActivity extends AppCompatActivity{
                     HashMap<String, Object> dataN = new HashMap<>();
                     RealtimeData data_edit = new RealtimeData(placeVal, memoVal, hourVal, minVal, col_pos + 1);
                     String day = col_day[col_pos];
-                    //String day_time = day + t;
                     dataN.put(String.valueOf(t), data_edit);
                     dbDataReference_1.child(day).updateChildren(dataN);
+
 
                     if (Cell_edit.getData() == "-") {
                         Cell cellAdd = new Cell(placeVal, placeVal, t);
@@ -581,5 +622,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
 
         }
     }
+
+
 
 }

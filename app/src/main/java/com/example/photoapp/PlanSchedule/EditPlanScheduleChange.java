@@ -16,6 +16,7 @@ import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.example.photoapp.PlanMain.PlanMainActivity;
 import com.example.photoapp.R;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public class EditPlanScheduleChange extends AppCompatActivity {
     EditText place_editPlan2;
     EditText memo_editPlan2;
     Spinner spin_editPlan2;
+    int time_orgin;
     public static final int RC_EDIT_PLAN_CHA = 1014;
     public static final int RC_EDIT_PLAN_DEL = 1015;
 
@@ -36,6 +38,7 @@ public class EditPlanScheduleChange extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_plan_schedule_change);
 
+        PlanMainActivity.FIRST_READ_MAIN = false;
         setActionBar();
 
         hour_editPlan2 = (EditText) findViewById(R.id.hour_editPlan2);
@@ -47,6 +50,7 @@ public class EditPlanScheduleChange extends AppCompatActivity {
         String place = intent.getExtras().getString("place");
         String memo = intent.getExtras().getString("memo");
         int time = intent.getExtras().getInt("hourmin");
+        time_orgin = time;
         int hour = (time/60);
         setSpinnerEditPlan(hour);
         if(hour>12){
@@ -107,6 +111,7 @@ public class EditPlanScheduleChange extends AppCompatActivity {
         intent.putExtra("hourVal",hour_editPlan2.getText().toString());
         intent.putExtra("minVal",min_editPlan2.getText().toString());
         intent.putExtra("spinVal",spin_editPlan2.getSelectedItem().toString());
+        intent.putExtra("time",time_orgin);
         setResult(RC_EDIT_PLAN_CHA,intent);
         finish();
     }
@@ -117,7 +122,9 @@ public class EditPlanScheduleChange extends AppCompatActivity {
                 .setPositiveButton("삭제", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        setResult(RC_EDIT_PLAN_DEL);
+                        Intent intent = new Intent();
+                        intent.putExtra("time",time_orgin);
+                        setResult(RC_EDIT_PLAN_DEL,intent);
                         finish();
                         Toast.makeText(getApplicationContext(), "삭제하셨습니다", Toast.LENGTH_SHORT).show();
                     }

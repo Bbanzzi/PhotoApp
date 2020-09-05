@@ -1,6 +1,7 @@
 package com.example.photoapp.PlanMain;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -54,7 +55,6 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
         Bundle extra = getArguments();
         title = extra.getString("title");
         planSchedule =extra.getParcelableArrayList("planSchedule");
-        Log.i(TAG,title+title);
     }
 
     @Override
@@ -66,8 +66,7 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
 
         for(RealtimeData realTimeData:planSchedule){
             items.add(new PlanPhotoData(realTimeData.getPlace(),realTimeData.getTimeStr(),realTimeData.getMemo(),realTimeData.getTime()));
-            Log.i("TAG","----onCreateView_frag---- : " + realTimeData.getMemo());
-            Log.i("TAG","----onCreateView_frag---- : " + realTimeData.getTime());
+            //Log.i("TAG","----onCreateView_frag---- : " + realTimeData.getTime());
             if(realTimeData.getPhotoDataList() !=null){
                 items.addAll(realTimeData.getPhotoDataList());
             }
@@ -94,6 +93,11 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
         return rootView;
     }
 
+    @Override
+    public void onStart(){
+        super.onStart();
+    }
+
     public String getTitle(){
         return this.title;
     }
@@ -118,24 +122,15 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
 
     @Override
     public void onPlaceItemClicked(View v, PlanPhotoData data){
-
         String place = data.getPlace();
         String memo = data.getMemo();
         int time = data.getTime_i();
-        Intent intent = new Intent(getContext(), EditPlanScheduleChange.class);
-        intent.putExtra("place",place);
-        intent.putExtra("memo",memo);
-        intent.putExtra("hourmin",time);
-        startActivityForResult(intent, PlanMainActivity.RC_PLAN_MAIN);
-
+        ((PlanMainActivity)getActivity()).startEditPlanWithClick(place,memo,time);
     }
-
-
 
     @Override
     public void onPhotoItemLongSelected(View v, Boolean checkState, int position) {
         ((PlanMainActivity)getActivity()).changeCheckState(checkState);
-
     }
 
     @Override

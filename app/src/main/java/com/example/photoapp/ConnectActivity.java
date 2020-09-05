@@ -90,7 +90,6 @@ public class ConnectActivity extends AppCompatActivity{
             protected void onPostExecute(String token) {
 
                 Intent intent = new Intent(getApplicationContext(), PlanListActivity.class);
-                Log.i(TAG, token);
                 new GooglePhotoReference(token);
                 startActivity(intent);
 

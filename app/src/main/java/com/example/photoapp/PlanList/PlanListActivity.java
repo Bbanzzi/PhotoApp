@@ -38,7 +38,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
 import com.google.photos.library.v1.PhotosLibraryClient;
-import com.google.photos.library.v1.proto.LeaveSharedAlbumResponse;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -211,7 +210,6 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
                                 .setPositiveButton("예", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
-
                                         dbReference.getDbUserPlansRef().child(planItemList.get(position).getKey()).removeValue();
                                         dbReference.getDbPlanUsersRef().child(planItemList.get(position).getKey()).removeValue();
                                         planItemList.remove(position);

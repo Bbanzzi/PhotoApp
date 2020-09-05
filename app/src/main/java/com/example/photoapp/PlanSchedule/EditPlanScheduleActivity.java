@@ -13,6 +13,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Spinner;
 
+import com.example.photoapp.PlanMain.PlanMainActivity;
 import com.example.photoapp.R;
 
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ public class EditPlanScheduleActivity extends AppCompatActivity {
         setActionBar();
         setSpinnerEditPlan();
 
+        PlanMainActivity.FIRST_READ_MAIN = false;
         hour_editPlan = (EditText) findViewById(R.id.hour_editPlan);
         min_editPlan = (EditText) findViewById(R.id.min_editPlan);
         place_editPlan = (EditText) findViewById(R.id.place_editPlan);

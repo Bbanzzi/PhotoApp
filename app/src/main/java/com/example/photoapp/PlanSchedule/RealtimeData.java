@@ -22,7 +22,9 @@ public class RealtimeData implements Parcelable {
 
     private List<PlanPhotoData> photoDataList=new ArrayList<>();
 
-    public RealtimeData(){ }
+    public RealtimeData(){
+
+    }
 
     public RealtimeData(String place, String memo, String time_h, String time_m, int col ){
         this.place = place;
