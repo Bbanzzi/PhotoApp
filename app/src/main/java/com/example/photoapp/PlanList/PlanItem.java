@@ -34,8 +34,13 @@ public class PlanItem implements Parcelable {
     private String key;
     private String dynamicLink;
 
+    private String selectedDays;
+    private int dayNum;
+
 
     private PlanItem(Parcel in) {
+        selectedDays = in.readString();
+        dayNum = in.readInt();
         planTitle = in.readString();
         planDest = in.readString();
         albumTitle=in.readString();
@@ -56,13 +61,16 @@ public class PlanItem implements Parcelable {
     }
     //constructor for getvalue from database
     public PlanItem() {};
-    PlanItem(String planTitle, String planDest, int planPersonnel, Calendar startDates, Calendar endDates)
+    PlanItem(String planTitle, String planDest, int planPersonnel, Calendar startDates, Calendar endDates,String selectedDays,int dayNum)
     {
+        this.selectedDays=selectedDays;
+        this.dayNum=dayNum;
         this.planTitle = planTitle;
         this.planDest =planDest;
         this.albumTitle= albumTitle;
         this.albumId=albumId;
         this.planPersonnel=planPersonnel;
+
         this.startDates=startDates;
         this.endDates=endDates;
 
@@ -83,6 +91,7 @@ public class PlanItem implements Parcelable {
     public void setDynamicLink(String dynamicLink) {this.dynamicLink=dynamicLink;}
     public void setAlbumId(String albumId) {this.albumId=albumId;}
     public void setAlbumSharedToken(String albumSharedToken) {this.albumSharedToken=albumSharedToken;}
+    public void setSelectedDays(String selectedDays) {this.selectedDays=selectedDays;}
 
     void setStartDates(Calendar startDates) { this.startDates = startDates; }
     void setEndDates(Calendar endDates) { this.endDates = endDates; }
@@ -104,6 +113,8 @@ public class PlanItem implements Parcelable {
     public String getDynamicLink() {return this.dynamicLink;}
     public String getAlbumId() {return this.albumId;}
     public String getAlbumSharedToken() {return  this.albumSharedToken;}
+    public String getSelectedDays() { return this.selectedDays;}
+    public int getDayNum(){ return this.dayNum;}
 
     public String getStartDates_str() {
         String startDates_str = getCalendarToStringDates(this.startDates);
@@ -157,6 +168,8 @@ public class PlanItem implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(selectedDays);
+        dest.writeInt(dayNum);
         dest.writeString(planTitle);
         dest.writeString(planDest);
         dest.writeString(albumTitle);
@@ -167,6 +180,7 @@ public class PlanItem implements Parcelable {
         dest.writeString(startDates.getTimeZone().getID());
         dest.writeString(key);
         dest.writeString(dynamicLink);
+
     }
 
 

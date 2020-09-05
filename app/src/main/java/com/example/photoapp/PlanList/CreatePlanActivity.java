@@ -24,8 +24,10 @@ import com.example.photoapp.PlanSchedule.Cell;
 import com.example.photoapp.R;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -36,6 +38,8 @@ public class CreatePlanActivity extends AppCompatActivity{
     private static CustomCalendarDialog customCalendarDialog;
     private static Calendar startDates;
     private static Calendar endDates;
+    private static List<Calendar> selectedDays;
+    private static int index;
     private Map<String,String> albumInfo;
     private EditText gettitle = null;
     private Toolbar toolbar;
@@ -79,9 +83,11 @@ public class CreatePlanActivity extends AppCompatActivity{
         customCalendarDialog= new CustomCalendarDialog(this);
         customCalendarDialog.setCustomCalendarDialogListener(new CustomCalendarDialog.CustomCalendarDialogListener() {
             @Override
-            public void onPositiveClicked(Calendar getStartDates, Calendar getEndDates) {
+            public void onPositiveClicked(Calendar getStartDates, Calendar getEndDates, List<Calendar> getSelectedDays, int getIndex) {
                 startDates=getStartDates;
                 endDates=getEndDates;
+                index = getIndex;
+                selectedDays = getSelectedDays;
                 String endDates_add = "~ " + setCalendartoStringDates(endDates);
                 startdates.setText(setCalendartoStringDates(startDates));
                 enddates.setText(endDates_add);
@@ -132,7 +138,9 @@ public class CreatePlanActivity extends AppCompatActivity{
                         String planTitle=gettitle.getText().toString();
                         String planDest=getdest.getText().toString();
                         int planPersonnel=Integer.parseInt(getpersonnel.getText().toString());
-                        PlanItem planItem=new PlanItem(planTitle,planDest,planPersonnel,startDates,endDates);
+                        String selectedDays_str = transCalendarToStr(selectedDays);
+
+                        PlanItem planItem=new PlanItem(planTitle,planDest,planPersonnel,startDates,endDates,selectedDays_str,index+1);
                         planItem.setAlbumId(albumInfo.get("AlbumId"));
                         planItem.setAlbumTitle(albumInfo.get("AlbumTitle"));
                         planItem.setAlbumSharedToken(albumInfo.get("AlbumSharedToken"));
@@ -146,7 +154,6 @@ public class CreatePlanActivity extends AppCompatActivity{
                         dbReference.getCreateDbPlansRef().setValue(planItem);
                         dbReference.getCreateDbPlanUsersRef().setValue(userinfo);
                         dbReference.getCreateDbUserPlansRef().child(dbReference.getCreateDbPlansRef().getKey()).setValue(planItem);
-
 
                         Intent intent = new Intent();
                         intent.putExtra("planItem", planItem);
@@ -201,6 +208,17 @@ public class CreatePlanActivity extends AppCompatActivity{
     public String setCalendartoStringDates(Calendar calendar){
         String dates = new SimpleDateFormat("yyyy년 MM월 dd일 EEE요일", Locale.KOREAN).format(calendar.getTimeInMillis());
         return dates;
+    }
+
+    public String transCalendarToStr(List<Calendar> selectedDays){
+        int sizeDays = selectedDays.size();
+        String daysStrList = null;
+        for(int i=0;i<sizeDays;i++){
+            Calendar cal = selectedDays.get(i);
+            String monthday = new SimpleDateFormat("MM.dd",Locale.KOREAN).format(cal.getTimeInMillis());
+            daysStrList = daysStrList + monthday;
+        }
+        return daysStrList;
     }
 
     //Album 고르는 dialog => 중복된 경우 ?

@@ -85,6 +85,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private static Spinner spinner;
     private PlanPagerAdapter adapter;
     private int days;
+    private String selectDays;
 
     private ArrayList< ArrayList<RealtimeData> > realTimeDataArrayList=new ArrayList<>();
     private List<Map<String, Long>> trashPhotos=new ArrayList<>();
@@ -147,8 +148,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         dbReference=(DatabaseReferenceData) getApplication();
         dbReference.setContext(this);
 
-        days = (int) planItem.getPlanDates();
-
+        days = (int) planItem.getDayNum();
+        selectDays = planItem.getSelectedDays();
 
         btn_back_inPlanMain=(ImageButton)findViewById(R.id.btn_back_inPlanMain);
         planschedulebtn=(ImageButton)findViewById(R.id.btn_menu);
@@ -169,8 +170,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             realTimeDataArrayList.add(EmptyRealTimeData);
             trashPhotos.add(empty);
         }
-        Log.i(TAG, String.valueOf(realTimeDataArrayList.get(1).size()));
-
 
 
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -184,6 +183,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     public void onPause(){
         super.onPause();
         Log.i(TAG, "----onPause main----");
+        FIRST_READ_MAIN = false;
     }
 
 
@@ -258,37 +258,39 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                     // 3. 내가 sorting or deletion중에 누군가가 삭제를 하는경우 => 일단 보류류
                     MyDeletion=false;
                     Log.i(TAG, "doenstaasdfjl");
-
                 }
 
             }
-
             @Override
             public void onFailed(DatabaseError databaseError) {
 
             }
         });
+        if(FIRST_READ_MAIN) {
+            setActionBar();
+            viewPager = (ViewPager) findViewById(R.id.viewPager);
 
-        setActionBar();
-        viewPager = (ViewPager) findViewById(R.id.viewPager);
+            adapter = new PlanPagerAdapter(getSupportFragmentManager(), realTimeDataArrayList, 1);
+            adapter.setDays(days);
+            //뷰 페이저
+            viewPager.setOffscreenPageLimit(5);
+            viewPager.setAdapter(adapter);
+            viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+                @Override
+                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                }
 
-        adapter = new PlanPagerAdapter(getSupportFragmentManager(), realTimeDataArrayList ,1);
-        adapter.setDays(days);
-        //뷰 페이저
-        viewPager.setAdapter(adapter);
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-            }
-            @Override
-            public void onPageSelected(int position) {
-                spinner.setSelection(position);
-                day_check = position;
-            }
-            @Override
-            public void onPageScrollStateChanged(int state) {
-            }
-        });
+                @Override
+                public void onPageSelected(int position) {
+                    spinner.setSelection(position);
+                    day_check = position;
+                }
+
+                @Override
+                public void onPageScrollStateChanged(int state) {
+                }
+            });
+        }
 
 
 
@@ -392,14 +394,15 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         setSpinner();
 
-        TextView date_text = (TextView) findViewById(R.id.date_text);
     }
     //setSpinner
     public void setSpinner() {
 
         List<String> spinnerArray = new ArrayList<String>();
         for (int i = 0; i < days; i++) {
-            spinnerArray.add("Day " + (i + 1));
+            String day_now = selectDays.substring(5*i+4,5*i+9);
+            spinnerArray.add(day_now);
+
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.support_simple_spinner_dropdown_item, spinnerArray);
@@ -599,7 +602,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
                 CHECK_DEL_MAIN = true;
                 String time_i = String.valueOf(data.getExtras().getInt("time"));
-                String day = PlanScheduleActivity.col_day[day_check];
+                String day = PlanScheduleActivity.col_day_firebase[day_check];
                 dbReference.getDbPlanScheduleRef().child(planItem.getKey()).child(day).child(time_i).removeValue();
 
 
@@ -624,7 +627,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                     time_add = (Integer.parseInt(hourVal)+12) * 60 + Integer.parseInt(minVal);
                     hourVal = String.valueOf( Integer.parseInt(hourVal) + 12);
                 }
-                String day = PlanScheduleActivity.col_day[day_check];
+                String day = PlanScheduleActivity.col_day_firebase[day_check];
                 String time_i = String.valueOf(time_add);
                 dbReference.getDbPlanScheduleRef().child(planItem.getKey()).child(day).child(time_orgin).removeValue();
 
@@ -658,7 +661,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 dbDataReference_2 = dbReference_2.getDbPlanScheduleRef().child(planItem.getKey());
                 HashMap<String, Object> dataN = new HashMap<>();
                 RealtimeData data_edit = new RealtimeData(placeVal, memoVal, hourVal, minVal, day_check + 1);
-                String day = PlanScheduleActivity.col_day[day_check];
+                String day = PlanScheduleActivity.col_day_firebase[day_check];
                 dataN.put(String.valueOf(time_add), data_edit);
                 dbDataReference_2.child(day).updateChildren(dataN);
 
@@ -897,8 +900,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).updateChildren(photos);
                 mOnKeyBackPressedListener.onBack(true);
                 changeCheckState(!checkBoxState);
-                MyDeletion=true;
-
+                adapter.notifyDataSetChanged();
             }
         });
         dialog.show();

@@ -32,13 +32,15 @@ public class RealtimeData implements Parcelable {
         this.time = Integer.parseInt(time_h)*60 + Integer.parseInt(time_m);
         this.days = col;
     }
-
+/*
     public RealtimeData(String place, String memo, String time_h, String time_m, String col){
         this.place = place;
         this.memo = memo;
         this.time = Integer.parseInt(time_h)*60 + Integer.parseInt(time_m);
         this.days = getDaysFromStr(col);
     }
+
+ */
 
     public RealtimeData(String place, int time, String memo, int col){
         this.place=place;
@@ -54,6 +56,7 @@ public class RealtimeData implements Parcelable {
         days=in.readInt();
     }
 
+    /*
     public int getDaysFromStr(String col){
         int days = 1;
         switch (col){
@@ -65,6 +68,8 @@ public class RealtimeData implements Parcelable {
         }
         return days;
     }
+
+     */
 
     @Exclude
     public Map<String, Object> toMap() {

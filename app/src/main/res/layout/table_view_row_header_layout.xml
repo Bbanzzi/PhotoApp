@@ -3,14 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:background="@color/cell_background_color"
-    android:layout_width="@dimen/default_row_header_width"
+    android:layout_width="20dp"
     android:layout_height="@dimen/cell_height">
 
     <LinearLayout
         android:id="@+id/row_header_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center_vertical"
+        android:gravity="top"
         android:orientation="vertical">
 
         <TextView
@@ -19,10 +19,11 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:maxLines="1"
-            android:textColor="@color/table_view_default_text_color"
-            android:textSize="@dimen/text_size"
+            android:textColor="#000"
+            android:textSize="9sp"
             android:textStyle="bold"
-            tools:text="Row Data" />
+            tools:text="Row Data"
+            tools:ignore="SmallSp"/>
     </LinearLayout>
 
     <View
