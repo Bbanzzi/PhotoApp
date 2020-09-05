@@ -134,5 +134,9 @@ public class GooglePhotoReference  extends DatabaseReferenceData {
         }
     }
 
+    public void deleteAlbum(String sharedToken){
+        photosLibraryClient.leaveSharedAlbum(sharedToken);
+    }
+
 }
 
