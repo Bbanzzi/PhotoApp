@@ -97,6 +97,7 @@ public class SettingPreferenceFragment extends PreferenceFragment implements Sha
     }
 
     public void signOut(){
+        LoginInfoProvider.clearUserData(getContext());
         mGoogleApiClient.connect();
         mGoogleApiClient.registerConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
             @Override

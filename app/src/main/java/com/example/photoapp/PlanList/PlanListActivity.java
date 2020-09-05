@@ -268,6 +268,7 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
                 planItem.setTimestamptoCalendarDates();
                 planItemList.add(planItem);
                 PlanListRecyclerAdatper.notifyDataSetChanged();
+                Log.i(TAG,"----ChildAdded----");
             }
             @Override
             public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {

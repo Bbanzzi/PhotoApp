@@ -46,7 +46,6 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
     public static String memo_val = null;
     public static String time_val = null;
 
-    private static int checkPosition;
 
 
     // 생성자에서 데이터 리스트 객체를 전달받음.
@@ -85,7 +84,6 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        checkPosition = position;
 
         if(list.get(position).getPlace()!=null) {
             PlaceViewHolder placeViewHolder = (PlaceViewHolder) holder;
@@ -112,7 +110,7 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
     @Override
     public int getItemCount() {
-        //Log.i(TAG, "getItemCount()" + list.size());
+        Log.i(TAG, "getItemCount()" + list.size());
         return list.size();
     }
 
@@ -228,7 +226,8 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
     private static OnPhotoItemLongSelectedInterface photoLongListener;
     private static OnPlaceItemClickedInterface placeListener;
 
-    public void setCheckBoxState(Boolean checkBoxState){
-        this.checkBoxState=checkBoxState;
+
+    public void setCheckBoxState(Boolean checkBoxState2){
+        checkBoxState=checkBoxState2;
     }
 }

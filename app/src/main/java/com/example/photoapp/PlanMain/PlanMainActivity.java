@@ -42,6 +42,7 @@ import com.example.photoapp.Data.DatabaseReferenceData;
 import com.example.photoapp.Data.GooglePhotoReference;
 import com.example.photoapp.MainActivity;
 import com.example.photoapp.PlanList.PlanItem;
+import com.example.photoapp.PlanMain.PhotoWork.PhotoDeleteRequest;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoRequestSupplier;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoSortRequest;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoUploadRunnable;
@@ -61,6 +62,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.dynamiclinks.DynamicLink;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.ShortDynamicLink;
+import com.google.protobuf.Timestamp;
 
 import java.text.Collator;
 import java.util.ArrayList;
@@ -85,7 +87,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private int days;
 
     private ArrayList< ArrayList<RealtimeData> > realTimeDataArrayList=new ArrayList<>();
-    private Map<String, String> trashPhotos=new HashMap<>();
+    private List<Map<String, Long>> trashPhotos=new ArrayList<>();
 
     public static final int RC_PLAN_MAIN=1007;
     private DatabaseReferenceData dbReference;
@@ -115,7 +117,12 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private ImageButton btn_invitePlanItem;
     private ImageButton btn_deletephoto;
     private ImageButton btn_photoselectmenu;
-    OnGetDataListener onGetData;
+
+    private static boolean ReadDbSchedule=false; // firebase 가 늦게 읽었을 경우 대비
+    private static boolean ReadDBDeletionFirst=false; // fireabse 가 늦게 읽었을 경우 대비
+    private static boolean MyDeletion=false;   // 내가 사진을 지운 경우 firebase에서 다시 읽어오는 것보다 바로 삭제하기
+    private static boolean AllListingPhotos=false; // 모든 사진을 처음 다 정렬함
+
     public static boolean FIRST_READ_MAIN = true;
     public static boolean CHECK_EDIT_MAIN = false;
     public static boolean CHECK_DEL_MAIN = false;
@@ -157,8 +164,10 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         for(int i=0; i<days ; i++){
             ArrayList<RealtimeData> EmptyRealTimeData=new ArrayList<RealtimeData>();
+            Map<String, Long> empty=new HashMap<>();
             EmptyRealTimeData.add(new RealtimeData());
             realTimeDataArrayList.add(EmptyRealTimeData);
+            trashPhotos.add(empty);
         }
         Log.i(TAG, String.valueOf(realTimeDataArrayList.get(1).size()));
 
@@ -208,6 +217,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             public void onSuccess() {
                 // 읽어왔을때 작업할 것
                 Log.i("TAG","----adapter.onSuccess----");
+                ReadDbSchedule=true;
                 adapter.notifyDataSetChanged(); // pagerstate의 getitemposition이 실행됨
             }
 
@@ -215,6 +225,49 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             public void onFailed(DatabaseError databaseError) { }
         });
 
+        readTrashPhotos(new OnTrashDataListener() {
+            @Override
+            public void onSuccess() {
+                //맨 처음 trashphoto 읽지 않을때 or 내가 삭제한것이 아닐때
+                if ( ReadDBDeletionFirst & !MyDeletion ){
+                    CompletableFuture.runAsync(new Runnable() {
+                        @Override
+                        public void run() {
+                            while(!AllListingPhotos){
+                                try {
+                                    Thread.sleep(500);
+                                    Log.i(TAG, "Others is waited");
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            PhotoDeleteRequest.deleteOtherRequest(planItem, realTimeDataArrayList, trashPhotos);
+                            Log.i(TAG, "Others is deleted");
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    adapter.notifyDataSetChanged();
+                                }
+                            });
+
+                        }
+                    });
+                }else{
+                    // 1. 처음 삭제하는 경우
+                    // 2. 내가 삭제하는 경우
+                    // 3. 내가 sorting or deletion중에 누군가가 삭제를 하는경우 => 일단 보류류
+                    MyDeletion=false;
+                    Log.i(TAG, "doenstaasdfjl");
+
+                }
+
+            }
+
+            @Override
+            public void onFailed(DatabaseError databaseError) {
+
+            }
+        });
 
         setActionBar();
         viewPager = (ViewPager) findViewById(R.id.viewPager);
@@ -222,7 +275,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         adapter = new PlanPagerAdapter(getSupportFragmentManager(), realTimeDataArrayList ,1);
         adapter.setDays(days);
         //뷰 페이저
-        viewPager.setOffscreenPageLimit(5);
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
@@ -443,6 +495,18 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             }
         }
         Log.i("TAG", "----readPlanSchedule----");
+        dbReference.getDbPlanScheduleRef().child(child).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if(!snapshot.exists()){
+                    ReadDbSchedule=true;
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
         dbReference.getDbPlanScheduleRef().child(child).//orderByChild("time").
         addChildEventListener(new ChildEventListener() {
             @Override
@@ -616,48 +680,37 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         GooglePhotoReference googlePhotoReference=(GooglePhotoReference) getApplication();
         Context context=this;
         PhotoUploadRunnable photoUploadRunnable = new PhotoUploadRunnable(this, planItem, googlePhotoReference);
-
+        PhotoRequestSupplier photoRequestSupplier = new PhotoRequestSupplier(context, planItem, googlePhotoReference);
         CompletableFuture.runAsync(photoUploadRunnable);
         // 지금은 Thread하나만 이용해서 upload중인데 이거 바꿀생각
-        readTrashPhotos(new OnGetDataListener() {
-            @Override
-            public void onStart() {
-                PhotoRequestSupplier photoRequestSupplier=new PhotoRequestSupplier(context, planItem, trashPhotos, googlePhotoReference);
-                CompletableFuture.supplyAsync(photoRequestSupplier)
-                        .thenApply(new Function<List<List<PlanPhotoData>>, List<List<PlanPhotoData>>>() {
-                            @Override
-                            public List<List<PlanPhotoData>> apply(List<List<PlanPhotoData>> lists) {
-                                Log.i(TAG,Thread.currentThread().getName());
-                                //만약 realtimedata가 더 늦게 받아진다면? 그럴일을 거의 없긴함 while(realTimeDataArrayList!=null)
-                                ArrayList<ArrayList<RealtimeData>> temp= PhotoSortRequest.sortingRequest(planItem,realTimeDataArrayList,lists);
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        adapter.notifyDataSetChanged();
-                                    }
-                                });
 
-                                if(messageCheck = true) {
-                                    showMessage();
-                                }
-                                return lists;
+        CompletableFuture.supplyAsync(photoRequestSupplier)
+                .thenApply(new Function<List<List<PlanPhotoData>>, List<List<PlanPhotoData>>>() {
+                    @Override
+                    public List<List<PlanPhotoData>> apply(List<List<PlanPhotoData>> lists) {
+                        Log.i(TAG, Thread.currentThread().getName());
+                        //만약 realtimedata가 더 늦게 받아진다면? 그럴일을 거의 없긴함 while(realTimeDataArrayList!=null)
+                        while (!ReadDbSchedule) {
+                            Log.i(TAG, "Not Yet Read Schedule" + ReadDbSchedule);
+                        }
+                        // 처음 delete 밑의것이 true로 바뀜에 따라 onSuccess실행
+                        ReadDBDeletionFirst=true;
+                        PhotoDeleteRequest.DeleteFirstRequest(lists, trashPhotos);
+                        PhotoSortRequest.sortingRequest(planItem, realTimeDataArrayList, lists);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                AllListingPhotos=true;
+                                adapter.notifyDataSetChanged();
                             }
                         });
 
-            }
-
-            @Override
-            public void onSuccess() {
-
-
-            }
-
-            @Override
-            public void onFailed(DatabaseError databaseError) {
-
-            }
-        });
-
+                        if (messageCheck = true) {
+                            showMessage();
+                        }
+                        return lists;
+                    }
+                });
 
 
         /*
@@ -825,45 +878,46 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         dialog.setPositiveButton("확인", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                int day_index=0;
                 for(ArrayList<RealtimeData> realtimeDataList: realTimeDataArrayList){
                     for(RealtimeData realtimeData : realtimeDataList){
                         Iterator<PlanPhotoData> iterator=realtimeData.getPhotoDataList().iterator();
                         while (iterator.hasNext()) {
                             PlanPhotoData planPhotoData = iterator.next();
                             if(planPhotoData.getCheck()){
-                                photos.put(planPhotoData.getId(),String.valueOf(planPhotoData.getCreationTimeLong()));
+                                //(100+day_index) 최대 3자리가능, 365최대 다시 받아올때 -100
+                                String[] filename =planPhotoData.getFilename().split("\\.");
+                                photos.put(filename[0], day_index + String.valueOf(planPhotoData.getCreationTimeLong()));
                                 iterator.remove();
                             }
                         }
                     }
+                    day_index++;
                 }
                 dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).updateChildren(photos);
                 mOnKeyBackPressedListener.onBack(true);
                 changeCheckState(!checkBoxState);
-                adapter.notifyDataSetChanged();
+                MyDeletion=true;
+
             }
         });
         dialog.show();
     }
 
-    private void readTrashPhotos(OnGetDataListener listener){
-        dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).orderByValue().addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                Log.i(TAG, "All read");
-                listener.onStart();
-            }
+    private interface OnTrashDataListener {
+        public void onSuccess();
+        public void onFailed(DatabaseError databaseError);
+    }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
+    private void readTrashPhotos(OnTrashDataListener listener){
+        int cnt=0;
         dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).orderByValue().addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 if(snapshot.exists()){
-                    trashPhotos.put(snapshot.getKey(),snapshot.getValue(String.class));
+                    String timestamp=snapshot.getValue(String.class);
+                    int days= Integer.parseInt(timestamp.substring(0, String.valueOf(planItem.getPlanDates()).length()));
+                    trashPhotos.get(days).put(snapshot.getKey() , Long.parseLong(timestamp.substring(String.valueOf(planItem.getPlanDates()).length())));
                 }
                 listener.onSuccess();
             }
@@ -880,7 +934,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             public void onCancelled(@NonNull DatabaseError error) {
             }
         });
-        listener.onStart();
     }
 
     public interface onKeyBackPressedListener {

@@ -18,38 +18,35 @@ public class PhotoSortRequest {
     private static final String TAG="SORTING";
 
 
-    public  static ArrayList<ArrayList<RealtimeData>> sortingRequest(PlanItem planItem, ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList, List<List<PlanPhotoData>> lists) {
+    public static ArrayList<ArrayList<RealtimeData>> sortingRequest(PlanItem planItem, ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList, List<List<PlanPhotoData>> lists) {
 
         //날짜별로 정렬
         //PlanData index\
         // 시작날짜
-        Calendar startDates = planItem.putStartDates();
-        int days = startDates.get(Calendar.DAY_OF_MONTH);
-        // 분류할때 시작 날짜 비어있는 계획에 대해서는 사진이 빠지게 되는거 고쳐야함
+        Calendar startDates = (Calendar) planItem.putStartDates().clone();
         for (int i = 0; i < lists.size(); i++) { // 날짜 days로 바꿔되댐 날짜 for문
             Log.i(TAG, (i+1) + "일쨰");
             int realTimeData_index = 0;
             int planPhotoData_index = 0;
-            Boolean lastRealTimeData=false;
+
             List<RealtimeData> realTimeDataList = realTimeDataArrayList.get(i); // 하루 날짜의 모든 계획
             List<PlanPhotoData> planPhotoDataList = lists.get(i); // 하루 날짜의 모든 사진
             Log.i(TAG, "PHotoDATA SIZE : " + planPhotoDataList.size() + " RealTimeDATA Size: " + realTimeDataList.size());
 
             for( ; realTimeData_index<realTimeDataList.size(); realTimeData_index++) {
                 RealtimeData plan = realTimeDataList.get(realTimeData_index); // 계획
-                Long planTime = getPlanTime(startDates, realTimeDataList.get(realTimeData_index), lastRealTimeData); // realtimedate의 Timestamp얻기
+                Long planTime = getPlanTime(startDates, plan, false); // realtimedate의 Timestamp얻기
                 // 다음 계획 시간
                 Long nextPlanTime;
                 if (realTimeDataList.size() <= (realTimeData_index + 1)) { // 그날의 마지막 계획일때
-                    lastRealTimeData=true;
-                    nextPlanTime = getPlanTime(startDates, null , lastRealTimeData);
+                    nextPlanTime = getPlanTime(startDates, null , true);
                 } else {
-                    nextPlanTime = getPlanTime(startDates, realTimeDataList.get(realTimeData_index + 1), lastRealTimeData);
+                    nextPlanTime = getPlanTime(startDates, realTimeDataList.get(realTimeData_index + 1), false);
                 }
                 Log.i(TAG,"Place index: " + realTimeData_index +" PLACE : " + plan.getPlace() + " Time :" + planTime + " NEXT TIME :" + nextPlanTime);
 
                 // Photo Loop
-                for (; planPhotoData_index < lists.get(i).size(); planPhotoData_index++) {
+                for (; planPhotoData_index < planPhotoDataList.size() ; planPhotoData_index++) {
                     PlanPhotoData planPhotoData = planPhotoDataList.get(planPhotoData_index);
                     Log.i(TAG, "PHOTO TIME : " + planPhotoData.getCreationTimeLong() + " Photo Index" + planPhotoData_index);
                     if (planTime.compareTo(planPhotoData.getCreationTimeLong() ) <= 0 &&
@@ -60,10 +57,6 @@ public class PhotoSortRequest {
                         Log.i(TAG, "NEXT Iterator");
                         break;
                     }
-                }
-                // 한 날짜의 마지막 계획은 위의 else절을 통과하지 않고 끝나버림
-                if(lastRealTimeData){
-                    Log.i(TAG, "NEXT Iterator");
                 }
             }
         }
