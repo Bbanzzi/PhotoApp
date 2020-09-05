@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/text_item_frag">
+
+    <TextView
+        android:id="@+id/text_time_item"
+        android:layout_marginStart="10dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="16dp"
+        android:textColor="#000"
+        android:background="#EBF3FF"/>
+    <TextView
+        android:id="@+id/text_place_item"
+        android:layout_toRightOf="@id/text_time_item"
+        android:layout_marginStart="25dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="16dp"
+        android:textColor="@color/half_black"
+        android:background="#EBF3FF"/>
+
+    <ImageButton
+        android:id="@+id/btn_edit_item"
+        android:layout_alignParentEnd="true"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginEnd="10dp"
+        android:background="#00ff0000"
+        android:src="@drawable/ic_menu_black_18dp"
+        android:onClick="onEditPlan"/>
+
+
+</RelativeLayout>

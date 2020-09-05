@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_centerHorizontal="true"
+    android:layout_alignParentBottom="true"
+    android:background="#EBF3FF">
+
+    <TextView
+        android:id="@+id/rel_parent2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Plan"
+        android:textSize="20dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:textColor="#000"
+        android:layout_marginTop="13dp"
+        android:layout_marginBottom="10dp"/>
+
+    <ListView
+        android:layout_below="@+id/rel_parent2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:dividerHeight="4dp"
+        android:divider="#EBF3FF"
+        android:fadingEdge="none"
+        android:id="@+id/plus_plan_frag"/>
+
+    <ImageButton
+        android:id="@+id/btn_add_plan"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:layout_below="@id/plus_plan_frag"
+        android:src="@drawable/ic_add_circle_24px"
+        android:background="#00ff0000"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true"
+        android:onClick="clickAddPlan"/>
+
+
+</RelativeLayout>

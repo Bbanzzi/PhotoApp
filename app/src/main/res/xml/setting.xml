@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="프로필">
+        <Preference
+            android:key="profile"
+            android:title="아이디"/>
+        <Preference
+            android:key="logout"
+            android:title="로그아웃"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="메시지 알림">
+        <SwitchPreference
+            android:key="messageNotice"
+            android:defaultValue="false"
+            android:title="메시지 알림"
+            android:summary="사진 업로드 시 알림을 받습니다"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="네트워크 서비스">
+        <SwitchPreference
+            android:key="useOnlyWIFI"
+            android:defaultValue="false"
+            android:title="데이터 사용"
+            android:summary="WIFI가 연결되어있지 않을 때 데이터를 이용해 사진 업로드 합니다"/>
+   </PreferenceCategory>
+
+</PreferenceScreen>

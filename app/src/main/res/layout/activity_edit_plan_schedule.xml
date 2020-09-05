@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFF">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar_editPlan"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@color/main_photoapp"
+        android:elevation="5dp"
+        tools:ignore="MissingConstraints">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layout_toolbar_editPlan"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btn_back_inEditPlan"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_arrow_back_black_18dp"
+                android:background="#00ff0000"
+                tools:ignore="MissingConstraints" />
+
+            <TextView
+                android:id="@+id/textview_editPlanSchedule"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="24dp"
+                android:gravity="center"
+                android:text="여행 일정 추가"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintLeft_toRightOf="@+id/btn_back_inEditPlan"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="MissingConstraints" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    </androidx.appcompat.widget.Toolbar>
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingTop="50dp"
+        tools:ignore="MissingConstraints"
+        >
+
+        <LinearLayout
+            android:id="@+id/lin_time_editPlan"
+            android:layout_width="match_parent"
+            android:layout_height="65dp"
+            android:orientation="horizontal"
+            android:layout_marginStart="13dp"
+            android:layout_marginTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="MissingConstraints"
+            android:background="@drawable/textlines"
+            android:layout_marginEnd="13dp">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:background="#FFF"
+                android:src="@drawable/ic_baseline_calendar_24"
+                tools:ignore="MissingConstraints" />
+
+            <Spinner
+                android:id="@+id/spin_editPlan"
+                android:gravity="center_vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="18dp"/>
+
+            <EditText
+                android:id="@+id/hour_editPlan"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:hint="00"
+                android:textSize="16sp"
+                android:layout_marginStart="5dp"/>
+
+            <TextView
+                android:id="@+id/text_h"
+                android:text="시"
+                android:textSize="16sp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:layout_marginStart="3dp"/>
+
+            <EditText
+                android:id="@+id/min_editPlan"
+                android:hint="00"
+                android:textSize="16sp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:layout_marginStart="10dp"/>
+
+            <TextView
+                android:id="@+id/text_m"
+                android:text="분"
+                android:textSize="16sp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:layout_marginStart="3dp"/>
+
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/lin_place_editPlan"
+            android:layout_width="match_parent"
+            android:layout_height="65dp"
+            android:orientation="horizontal"
+            android:layout_marginStart="13dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lin_time_editPlan"
+            android:background="@drawable/textlines"
+            android:layout_marginEnd="13dp">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_baseline_place_24"
+                android:gravity="center_vertical"
+                android:background="#FFF"
+                tools:ignore="MissingConstraints" />
+
+            <EditText
+                android:id="@+id/place_editPlan"
+                android:layout_width="fill_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="18dp"
+                android:hint="장소/계획을 입력하세요"
+                android:gravity="center_vertical"
+                android:background="@null"
+                tools:textSize="16sp" />
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/lin_memo_editPlan"
+            android:layout_width="match_parent"
+            android:layout_height="65dp"
+            android:layout_marginStart="13dp"
+            app:layout_constraintTop_toBottomOf="@+id/lin_place_editPlan"
+            app:layout_constraintStart_toStartOf="parent"
+            android:background="@drawable/textlines"
+            android:layout_marginEnd="13dp">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:background="#FFF"
+                android:src="@drawable/ic_baseline_insert_comment_24"
+                tools:ignore="MissingConstraints" />
+
+            <EditText
+                android:id="@+id/memo_editPlan"
+                android:layout_width="fill_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:layout_marginStart="18dp"
+                android:hint="간단한 메모를 입력하세요"
+                android:background="@null"
+                tools:textSize="16sp" />
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="35dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@+id/lin_memo_editPlan"
+            app:layout_constraintStart_toStartOf="parent"
+            android:gravity="center">
+
+            <ImageButton
+                android:id="@+id/button_close_editPlan"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="#FFF"
+                android:src="@drawable/ic_baseline_close_24"
+                android:onClick="closeEditPlan"/>
+
+            <ImageButton
+                android:id="@+id/button_next_editPlan"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="#FFF"
+                android:layout_marginStart="120dp"
+                android:src="@drawable/ic_baseline_check_24"
+                android:onClick="nextEditPlan"/>
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

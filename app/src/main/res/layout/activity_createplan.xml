@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFF">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar_createPlan"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@color/main_photoapp"
+        android:elevation="5dp"
+        tools:ignore="MissingConstraints">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layout_toolbar_planSchedule"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btn_back_inPlanCreate"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_arrow_back_black_18dp"
+                android:background="#00ff0000"
+                tools:ignore="MissingConstraints" />
+
+            <TextView
+                android:id="@+id/textview_createSchedule"
+                android:layout_width="wrap_content"
+                android:layout_height="45dp"
+                android:layout_marginLeft="24dp"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="여행 계획 생성"
+                android:textSize="20dp"
+                android:textStyle="bold"
+                app:layout_constraintLeft_toRightOf="@+id/btn_back_inPlanCreate"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="MissingConstraints" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    </androidx.appcompat.widget.Toolbar>
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingTop="50dp"
+        tools:ignore="MissingConstraints"
+        >
+
+    <LinearLayout
+        android:id="@+id/date_lin"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:orientation="horizontal"
+        android:layout_marginStart="13dp"
+        android:layout_marginTop="10dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="MissingConstraints"
+        android:background="@drawable/textlines"
+        android:layout_marginEnd="13dp">
+
+    <ImageView
+        android:id="@+id/textview_setdates"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:background="#FFF"
+        android:src="@drawable/ic_baseline_calendar_24"
+        tools:ignore="MissingConstraints" />
+
+
+    <LinearLayout
+        android:id="@+id/textview_dates"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="18dp"
+        android:orientation="vertical"
+        app:layout_constraintLeft_toRightOf="@+id/textview_setdates"
+        tools:ignore="MissingConstraints">
+
+        <TextView
+            android:id="@+id/textview_startdates"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:text="출발일"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/textview_enddates"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:text="도착일"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/title_lin"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:orientation="horizontal"
+        android:layout_marginStart="13dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/date_lin"
+        android:background="@drawable/textlines"
+        android:layout_marginEnd="13dp">
+
+        <ImageView
+            android:id="@+id/textview_settitle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_baseline_title_24"
+            android:gravity="center_vertical"
+            android:background="#FFF"
+            tools:ignore="MissingConstraints" />
+
+        <EditText
+            android:id="@+id/edittext_gettitle"
+            android:layout_width="fill_parent"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="18dp"
+            android:hint="제목"
+            app:layout_constraintLeft_toRightOf="@+id/textview_settitle"
+            android:gravity="center_vertical"
+            android:background="@null"
+            tools:textSize="16sp" />
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/dest_lin"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:layout_marginStart="13dp"
+        app:layout_constraintTop_toBottomOf="@+id/title_lin"
+        app:layout_constraintStart_toStartOf="parent"
+        android:background="@drawable/textlines"
+        android:layout_marginEnd="13dp">
+
+    <ImageView
+        android:id="@+id/textview_dest"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:background="#FFF"
+        android:src="@drawable/ic_baseline_nation_24"
+        tools:ignore="MissingConstraints" />
+
+    <EditText
+        android:id="@+id/edittext_getdest"
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:layout_marginLeft="18dp"
+        android:hint="나라"
+        android:background="@null"
+        app:layout_constraintLeft_toRightOf="@+id/textview_dest"
+        tools:textSize="16sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/per_lin"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:orientation="horizontal"
+        android:layout_marginStart="13dp"
+        app:layout_constraintTop_toBottomOf="@+id/dest_lin"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:ignore="MissingConstraints"
+        android:background="@drawable/textlines"
+        android:layout_marginEnd="13dp">
+
+    <ImageView
+        android:id="@+id/textview_personnel"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:src="@drawable/ic_baseline_person_24"
+        android:background="#FFF"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:ignore="MissingConstraints" />
+
+    <EditText
+        android:id="@+id/edittext_getpersonnel"
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="18dp"
+        android:gravity="center_vertical"
+        android:inputType="number"
+        android:maxLength="4"
+        app:layout_constraintLeft_toRightOf="@+id/textview_personnel"
+        android:hint="인원 수"
+        android:background="@null"
+        tools:textSize="16sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/texttext"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        app:layout_constraintTop_toBottomOf="@+id/per_lin"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="* 제목과 같은 이름의 앨범이 생성됩니다"
+        android:textSize="13sp"
+        android:gravity="center"/>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="25dp"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/texttext"
+        app:layout_constraintStart_toStartOf="parent"
+        android:gravity="center">
+
+        <ImageButton
+            android:id="@+id/button_close"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="#FFF"
+            android:src="@drawable/ic_baseline_close_24" />
+
+        <ImageButton
+            android:id="@+id/button_next"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="#FFF"
+            android:layout_marginStart="120dp"
+            android:src="@drawable/ic_baseline_check_24" />
+    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

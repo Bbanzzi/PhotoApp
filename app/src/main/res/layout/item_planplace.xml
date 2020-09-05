@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/constraintlayout_planplace"
+    android:layout_width="wrap_content"
+    android:layout_height="30dp"
+    android:orientation="horizontal"
+    android:layout_margin="10dp">
+
+    <LinearLayout
+        android:id="@+id/lin_place_time"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/boundary_title_main"
+        android:clickable="true"
+        android:focusable="true">
+
+    <TextView
+        android:id="@+id/textview_planplace"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_marginStart="10dp"
+        android:textSize="19sp"
+        tools:ignore="MissingConstraints"
+        tools:text="제목" />
+
+    <TextView
+        android:id="@+id/textview_plantime"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_marginStart="11dp"
+        android:layout_marginEnd="10dp"
+        android:gravity="center"
+        android:textSize="11sp"
+        tools:ignore="MissingConstraints"
+        tools:text="시간" />
+
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btn_add_plan_item"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="25dp"
+        android:src="@drawable/ic_baseline_add_circle_24"
+        app:layout_constraintLeft_toRightOf="@+id/lin_place_time"
+        app:layout_constraintTop_toTopOf="parent"
+        android:onClick="clickGoPlusPlan"
+        android:background="#FFF"/>
+
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

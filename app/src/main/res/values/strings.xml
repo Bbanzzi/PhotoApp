@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">PhotoApp</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="day1">1일차</string>
+    <string name="day2">2일차</string>
+    <string name="day3">3일차</string>
+    <string name="day4">4일차</string>
+    <string name="day5">5일차</string>
+
+    <string name="time00">00시</string>
+    <string name="time03">03시</string>
+    <string name="time06">06시</string>
+    <string name="time09">09시</string>
+    <string name="time12">12시</string>
+    <string name="time15">15시</string>
+    <string name="time18">18시</string>
+    <string name="time21">21시</string>
+</resources>
