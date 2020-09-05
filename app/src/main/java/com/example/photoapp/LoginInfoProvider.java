@@ -55,7 +55,7 @@ public class LoginInfoProvider {
     }
 
     // 로그아웃
-    public static void clearUserData(Context context) {
+    public static void clearUserName(Context context) {
         SharedPreferences.Editor editor = getSharedPreferences(context).edit();
         editor.clear();
         editor.apply();

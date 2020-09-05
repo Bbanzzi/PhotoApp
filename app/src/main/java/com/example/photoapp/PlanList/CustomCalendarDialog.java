@@ -69,7 +69,7 @@ public class CustomCalendarDialog extends Dialog {
                 Calendar startDates=selectedDays.get(0);
                 Calendar endDates=selectedDays.get(index);
 
-                customCalendarDialogListener.onPositiveClicked(startDates,endDates);
+                customCalendarDialogListener.onPositiveClicked(startDates,endDates,selectedDays, index);
 
                 dismiss();
             }
@@ -83,7 +83,7 @@ public class CustomCalendarDialog extends Dialog {
     }
     //인터페이스 설정
     interface CustomCalendarDialogListener{
-        void onPositiveClicked(Calendar startDates,Calendar endDates);
+        void onPositiveClicked(Calendar startDates,Calendar endDates,List<Calendar> selectedDays, int index);
         void onNegativeClicked();
     }
 

@@ -1,5 +1,6 @@
 package com.example.photoapp.PlanSchedule;
 
+import android.graphics.Color;
 import android.inputmethodservice.Keyboard;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -34,7 +35,7 @@ public class PlanScheduleRecyclerAdapter extends  AbstractTableAdapter<ColumnHea
      * This is sample CellViewHolder class
      * This viewHolder must be extended from AbstractViewHolder class instead of RecyclerView.ViewHolder.
      */
-    class MyCellViewHolder extends AbstractViewHolder {
+    public class MyCellViewHolder extends AbstractViewHolder {
 
         final LinearLayout cell_container;
         final TextView cell_textview;
@@ -45,6 +46,7 @@ public class PlanScheduleRecyclerAdapter extends  AbstractTableAdapter<ColumnHea
 
             cell_container = itemView.findViewById(R.id.cell_container);
             cell_textview = itemView.findViewById(R.id.cell_data);
+
         }
     }
 
@@ -96,7 +98,20 @@ public class PlanScheduleRecyclerAdapter extends  AbstractTableAdapter<ColumnHea
 
         // Get the holder to update cell item text
         MyCellViewHolder viewHolder = (MyCellViewHolder) holder;
-        viewHolder.cell_textview.setText(cell.getPlaceText());
+
+        /* 이거 왜안됨
+        if(columnPosition % 2 == 1){
+            viewHolder.cell_container.setBackgroundColor(Color.parseColor("#000000"));
+        }
+
+         */
+
+        if(!cell.getPlaceText().equals("-")) {
+            viewHolder.cell_textview.setText(cell.getPlaceText());
+        }else{
+            viewHolder.cell_textview.setVisibility(View.INVISIBLE);
+        }
+
 
         // If your TableView should have auto resize for cells & columns.
         // Then you should consider the below lines. Otherwise, you can ignore them.

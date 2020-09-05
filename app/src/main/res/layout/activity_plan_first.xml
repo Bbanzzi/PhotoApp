@@ -82,9 +82,14 @@
                 android:id="@+id/content_container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:background="#fff"
                 app:allow_click_inside_cell="true"
                 app:allow_click_inside_column_header="false"
-                app:allow_click_inside_row_header="false" />
+                app:allow_click_inside_row_header="false"
+                app:unselected_color="#fff"
+                app:show_vertical_separator="false"
+                app:selected_color="@color/table_view_default_shadow_background_color"
+                />
 
         </LinearLayout>
 

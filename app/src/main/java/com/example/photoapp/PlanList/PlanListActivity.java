@@ -161,6 +161,7 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
             switch (resultCode) {
 
                 case RC_CREATE_PLAN:
+
                     /* 데이터가 중복되서 생성되서 끔
                     PlanItem planItem = data.getParcelableExtra("planItem");
 
@@ -268,7 +269,6 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
                 planItem.setTimestamptoCalendarDates();
                 planItemList.add(planItem);
                 PlanListRecyclerAdatper.notifyDataSetChanged();
-                Log.i(TAG,"----ChildAdded----");
             }
             @Override
             public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
