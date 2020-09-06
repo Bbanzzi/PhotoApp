@@ -184,6 +184,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         super.onPause();
         Log.i(TAG, "----onPause main----");
         FIRST_READ_MAIN = false;
+        Log.i(TAG, "----onPause main2----");
     }
 
 
