@@ -12,7 +12,9 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.photoapp.MainActivity;
 import com.example.photoapp.PlanList.PlanListRecyclerAdatper;
+import com.example.photoapp.PlanMain.Photo.PhotoMainActivity;
 import com.example.photoapp.PlanSchedule.EditPlanScheduleChange;
 import com.example.photoapp.PlanSchedule.RealtimeData;
 import com.example.photoapp.R;
@@ -33,7 +35,7 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
     private String title;
     private static String TAG =" Fragment";
     private ArrayList<RealtimeData> planSchedule;
-    private List<PlanPhotoData> items=new ArrayList<>();
+    private ArrayList<PlanPhotoData> items=new ArrayList<>();
 
 
     public PlanFragment(){}
@@ -72,7 +74,7 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
             }
         }
 
-        sectionAdapter=new PlanPlaceRecyclerAdapter(getContext(),items, this,this);
+        sectionAdapter=new PlanPlaceRecyclerAdapter(getContext(),items, this,this,this);
         final GridLayoutManager glm = new GridLayoutManager(getContext(), 4);
         glm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
@@ -147,5 +149,11 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
     @Override
     public void onPhotoItemSelected(View v, int position) {
 
+        Intent intent = new Intent(getContext(), PhotoMainActivity.class);
+        intent.putParcelableArrayListExtra("realTimeDataList", items);
+        Log.i(TAG, "realtimedatalist size" + items.size());
+        Log.i(TAG, " Selected position : " + position);
+        intent.putExtra("position", position);
+        startActivity(intent);
     }
 }

@@ -901,7 +901,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).updateChildren(photos);
                 mOnKeyBackPressedListener.onBack(true);
                 changeCheckState(!checkBoxState);
-                adapter.notifyDataSetChanged();
+                MyDeletion=true;
+                //adapter.notifyDataSetChanged();
             }
         });
         dialog.show();

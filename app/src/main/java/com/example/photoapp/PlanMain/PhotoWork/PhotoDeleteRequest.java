@@ -58,7 +58,7 @@ public class PhotoDeleteRequest{
         System.out.println("Second run: "+duration);
     }
 
-    public static void deleteOtherRequest(PlanItem planItem, ArrayList<ArrayList<RealtimeData>> lists , List< Map<String , Long> > trashPhotoDataList){
+    public static void deleteOtherRequest(PlanItem planItem, ArrayList<ArrayList<RealtimeData>> lists , List<Map<String , Long>> trashPhotoDataList){
 
         int day_index = 0;
         long startTime = System.nanoTime();

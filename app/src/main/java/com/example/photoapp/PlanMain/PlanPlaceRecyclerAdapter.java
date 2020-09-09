@@ -49,8 +49,8 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
 
     // 생성자에서 데이터 리스트 객체를 전달받음.
-    PlanPlaceRecyclerAdapter(Context context, List<PlanPhotoData> list
-                             //OnPhotoItemSelectedInterface photoListener,
+    PlanPlaceRecyclerAdapter(Context context, List<PlanPhotoData> list,
+                             OnPhotoItemSelectedInterface photoListener
             ,OnPhotoItemLongSelectedInterface photoLongListener
             ,OnPlaceItemClickedInterface placeListener) {
         this.context = context;
@@ -114,6 +114,10 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
         return list.size();
     }
 
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
 
     public class PlaceViewHolder extends RecyclerView.ViewHolder {
 
@@ -155,7 +159,7 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
                 @Override
                 public void onClick(View v) {
                     Log.i(TAG, "On Click");
-                    //photoListener.onPhotoItemSelected(v,getAdapterPosition());
+                    photoListener.onPhotoItemSelected(v,getAdapterPosition());
                 }
             });
             imageView.setOnLongClickListener(new View.OnLongClickListener() {
@@ -222,9 +226,9 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
     public interface OnPlaceItemClickedInterface{
         void onPlaceItemClicked(View v, PlanPhotoData data);
     }
-    private static OnPhotoItemSelectedInterface photoListener;
-    private static OnPhotoItemLongSelectedInterface photoLongListener;
-    private static OnPlaceItemClickedInterface placeListener;
+    private OnPhotoItemSelectedInterface photoListener;
+    private OnPhotoItemLongSelectedInterface photoLongListener;
+    private OnPlaceItemClickedInterface placeListener;
 
 
     public void setCheckBoxState(Boolean checkBoxState2){
