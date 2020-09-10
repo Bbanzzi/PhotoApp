@@ -34,4 +34,9 @@ public class PhotoPagerAdapter extends FragmentStatePagerAdapter {
     public int getCount() {
         return realTimeDataList.size();
     }
+
+    @Override
+    public int getItemPosition(@NonNull Object object) {
+        return POSITION_NONE;
+    }
 }

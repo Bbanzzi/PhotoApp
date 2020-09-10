@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.photoapp.MainActivity;
+import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanList.PlanListRecyclerAdatper;
 import com.example.photoapp.PlanMain.Photo.PhotoMainActivity;
 import com.example.photoapp.PlanSchedule.EditPlanScheduleChange;
@@ -36,12 +37,14 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
     private static String TAG =" Fragment";
     private ArrayList<RealtimeData> planSchedule;
     private ArrayList<PlanPhotoData> items=new ArrayList<>();
+    private PlanItem planItem;
 
 
     public PlanFragment(){}
 
-    public static PlanFragment newInstance(int position, String title, ArrayList<RealtimeData> realTimeData){
+    public static PlanFragment newInstance(int position, PlanItem planItem, String title, ArrayList<RealtimeData> realTimeData){
         Bundle bundle = new Bundle();
+        bundle.putParcelable("planItem", planItem);
         bundle.putString("title", title);
         bundle.putParcelableArrayList("planSchedule", realTimeData);
 
@@ -55,6 +58,7 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
     public void onCreate(Bundle saveInstanceState) {
         super.onCreate(saveInstanceState);
         Bundle extra = getArguments();
+        planItem=extra.getParcelable("planItem");
         title = extra.getString("title");
         planSchedule =extra.getParcelableArrayList("planSchedule");
     }
@@ -150,9 +154,9 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
     public void onPhotoItemSelected(View v, int position) {
 
         Intent intent = new Intent(getContext(), PhotoMainActivity.class);
+        intent.putExtra("planItem", planItem);
+        intent.putExtra("title", title);
         intent.putParcelableArrayListExtra("realTimeDataList", items);
-        Log.i(TAG, "realtimedatalist size" + items.size());
-        Log.i(TAG, " Selected position : " + position);
         intent.putExtra("position", position);
         startActivity(intent);
     }

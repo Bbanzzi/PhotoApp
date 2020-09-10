@@ -1,29 +1,40 @@
 package com.example.photoapp.PlanMain.Photo;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.viewpager.widget.ViewPager;
 
+import com.example.photoapp.Data.DatabaseReferenceData;
+import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanMain.PlanPagerAdapter;
 import com.example.photoapp.PlanMain.PlanPhotoData;
 import com.example.photoapp.PlanSchedule.RealtimeData;
 import com.example.photoapp.R;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
 
 public class PhotoMainActivity extends AppCompatActivity implements PhotoFragment.onFullScreenListener{
@@ -32,6 +43,15 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
 
     private ActionBar actionBar;
     private static boolean isImmersiveMode ;
+
+    private ArrayList<PlanPhotoData> planPhotoDataList;
+    private ViewPager viewPager;
+    private PhotoPagerAdapter adapter;
+
+    private DatabaseReferenceData dbReference;
+    private PlanItem planItem;
+    private String title;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,19 +59,24 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
         setContentView(R.layout.activity_photomain);
 
         Intent intent = getIntent();
+        planItem=intent.getParcelableExtra("planItem");
+        title=intent.getStringExtra("title");
+        Log.i(TAG, title.split(" ")[1]);
         ArrayList<PlanPhotoData> realTimeDataList = intent.getParcelableArrayListExtra("realTimeDataList");
         int selectedPosition= intent.getIntExtra("position" , -1);
 
+        dbReference=(DatabaseReferenceData) getApplication();
+        dbReference.setContext(this);
         // 작업공간 많이 차지 할듯 바꿔야함 main 의 날짜별로 정렬되어있는거 가져오면 좋은데
         // realTimeDataList에는 realTiemdata 즉 , 계획아이템도 포함되어있어 실제 사진만 있는 개수와는 차이가 난다.
         int index=0;
         int frontPlaceCnt=0;
-        ArrayList<PlanPhotoData> planPhotoDataList= (ArrayList<PlanPhotoData>) realTimeDataList.clone();
-        Iterator<PlanPhotoData> iterator=planPhotoDataList.iterator();
-        while(iterator.hasNext()){
-            if(iterator.next().getImageUrl()==null){
-                iterator.remove();
-                if( selectedPosition > index){
+        planPhotoDataList= new ArrayList<>();
+        for (PlanPhotoData planPhotoData : realTimeDataList) {
+            if (planPhotoData.getImageUrl() != null) {
+                planPhotoDataList.add(planPhotoData);
+            }else{
+                if (selectedPosition > index) {
                     frontPlaceCnt++;
                 }
             }
@@ -60,7 +85,7 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
         selectedPosition-=frontPlaceCnt;
 
 
-        ViewPager viewPager = (ViewPager) findViewById(R.id.viewPager_photomain);
+        viewPager = (ViewPager) findViewById(R.id.viewPager_photomain);
 
         Toolbar toolbar=(Toolbar) findViewById(R.id.toolbar_photomain);
         // status bar padding 겹치는 거 방지
@@ -72,7 +97,7 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
         actionBar = getSupportActionBar();
         toolbar.setNavigationOnClickListener(v -> finish());
 
-        PhotoPagerAdapter adapter = new PhotoPagerAdapter(getSupportFragmentManager(), planPhotoDataList, 1);
+        adapter = new PhotoPagerAdapter(getSupportFragmentManager(), planPhotoDataList, 1);
 
         viewPager.setAdapter(adapter);
         viewPager.setCurrentItem(selectedPosition);
@@ -143,7 +168,7 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch(item.getItemId()){
             case R.id.appbar_menu_delete:
-                Toast.makeText(this, "첫번째", Toast.LENGTH_SHORT).show();
+                showDeletePhotoDialog();
                 return true;
             case R.id.appbar_menu_download:
                 Toast.makeText(this, "두번째", Toast.LENGTH_SHORT).show();
@@ -163,5 +188,51 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
             result = getResources().getDimensionPixelSize(resourceId);
         }
         return result;
+    }
+
+    private void showDeletePhotoDialog(){
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setMessage("이 사진을 삭제하시겠습니까?");
+        dialog.setNegativeButton("취소", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        dialog.setPositiveButton("확인",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        deletePhoto(viewPager.getCurrentItem());
+                        viewPager.setCurrentItem(viewPager.getCurrentItem(),true);
+                        adapter.notifyDataSetChanged();
+                    }
+                });
+        // dlgAlert.create();
+        AlertDialog dialog_card = dialog.create();
+        // dlgAlert.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        // WindowManager.LayoutParams WMLP =
+        dialog_card.getWindow().setGravity(Gravity.BOTTOM);
+        dialog_card.getWindow().setLayout(ConstraintLayout.LayoutParams.MATCH_PARENT,ConstraintLayout.LayoutParams.WRAP_CONTENT);
+        dialog_card.getWindow().setBackgroundDrawableResource(R.drawable.dialog_rounded);
+        dialog_card.show();
+
+        TextView messageView = (TextView)dialog_card.findViewById(android.R.id.message);
+        messageView.setGravity(Gravity.CENTER);
+
+        Button btnPositive = dialog_card.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button btnNegative = dialog_card.getButton(AlertDialog.BUTTON_NEGATIVE);
+
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) btnPositive.getLayoutParams();
+        layoutParams.weight = 10;
+        btnPositive.setLayoutParams(layoutParams);
+        btnNegative.setLayoutParams(layoutParams);
+    }
+
+    private void deletePhoto(int position){
+        Map<String, Object> photo=new HashMap<>();
+        String[] filename =planPhotoDataList.get(position).getFilename().split("\\.");
+        photo.put(filename[0], (Integer.parseInt(title.split(" ")[1])-1)+String.valueOf(planPhotoDataList.get(position).getCreationTimeLong()));
+        dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).updateChildren(photo);
+        planPhotoDataList.remove(viewPager.getCurrentItem());
     }
 }

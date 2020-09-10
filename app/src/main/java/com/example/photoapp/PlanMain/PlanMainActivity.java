@@ -271,7 +271,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             setActionBar();
             viewPager = (ViewPager) findViewById(R.id.viewPager);
 
-            adapter = new PlanPagerAdapter(getSupportFragmentManager(), realTimeDataArrayList, 1);
+            adapter = new PlanPagerAdapter(getSupportFragmentManager(),planItem, realTimeDataArrayList, 1);
             adapter.setDays(days);
             //뷰 페이저
             viewPager.setOffscreenPageLimit(5);
