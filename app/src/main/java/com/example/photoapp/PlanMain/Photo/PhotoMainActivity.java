@@ -26,6 +26,7 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.example.photoapp.Data.DatabaseReferenceData;
 import com.example.photoapp.PlanList.PlanItem;
+import com.example.photoapp.PlanMain.PhotoWork.PhotoDeleteRequest;
 import com.example.photoapp.PlanMain.PlanPagerAdapter;
 import com.example.photoapp.PlanMain.PlanPhotoData;
 import com.example.photoapp.PlanSchedule.RealtimeData;
@@ -34,6 +35,7 @@ import com.example.photoapp.R;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -52,6 +54,9 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
     private PlanItem planItem;
     private String title;
 
+    private PhotoDownloadRequest photoDownloadRequest;
+    private List<Long> photoDownloadIdList=new ArrayList<>();
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,7 +72,7 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
 
         dbReference=(DatabaseReferenceData) getApplication();
         dbReference.setContext(this);
-        // 작업공간 많이 차지 할듯 바꿔야함 main 의 날짜별로 정렬되어있는거 가져오면 좋은데
+        // 작업공간 많이 차지 할듯 바꿔야함 main 의 날짜별로 정렬되어있는거 가져오면 좋은데 => 불가능
         // realTimeDataList에는 realTiemdata 즉 , 계획아이템도 포함되어있어 실제 사진만 있는 개수와는 차이가 난다.
         int index=0;
         int frontPlaceCnt=0;
@@ -83,6 +88,8 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
             index++;
         }
         selectedPosition-=frontPlaceCnt;
+        // 삭제를 위한 객체
+        photoDownloadRequest=new PhotoDownloadRequest(this,planItem);
 
 
         viewPager = (ViewPager) findViewById(R.id.viewPager_photomain);
@@ -171,6 +178,7 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
                 showDeletePhotoDialog();
                 return true;
             case R.id.appbar_menu_download:
+                photoDownloadIdList.add(photoDownloadRequest.downloadPhoto(planPhotoDataList.get(viewPager.getCurrentItem())));
                 Toast.makeText(this, "두번째", Toast.LENGTH_SHORT).show();
                 return true;
             case R.id.appbar_menu_info:

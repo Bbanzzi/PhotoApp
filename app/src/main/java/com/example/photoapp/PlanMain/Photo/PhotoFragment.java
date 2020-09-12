@@ -61,6 +61,7 @@ public class PhotoFragment extends Fragment {
         });
         ImageView imageView= (ImageView) rootView.findViewById(R.id.imageview_photomain);
 
+        Log.i(TAG, planPhotoData.getImageUrl());
         RequestOptions cropOptions = new RequestOptions()
                 .fitCenter()
                 .diskCacheStrategy(DiskCacheStrategy.ALL);
