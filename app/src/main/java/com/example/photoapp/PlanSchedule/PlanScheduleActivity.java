@@ -28,6 +28,7 @@ import com.evrencoskun.tableview.TableView;
 import com.evrencoskun.tableview.listener.ITableViewListener;
 import com.example.photoapp.Data.DatabaseReferenceData;
 import com.example.photoapp.PlanList.PlanItem;
+import com.example.photoapp.PlanList.PlanListActivity;
 import com.example.photoapp.PlanMain.PlanMainActivity;
 import com.example.photoapp.R;
 import com.google.firebase.database.DataSnapshot;
@@ -45,10 +46,10 @@ import java.util.List;
 public class PlanScheduleActivity extends AppCompatActivity{
 
 
+    private static final String TAG = "PlanScheduleActivity";
     public boolean cell_clicked_val = false;
     //public static String[] col_day = {"1일차", "2일차","3일차","4일차"};
-    public static String[] col_day;
-    public static String[] col_day_firebase;
+
     public static String[] row_time = {"00","03","06","09","12","15","18","21"};
 
     private List<Cell> returnCell = new ArrayList<>();
@@ -56,16 +57,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
     private static List<List<Cell>> mCellList;
     private static List<ColumnHeader> mColumnHeaderList;
     private int days_row = 0;
-    /*
-    private List<Cell> rowCell1 = new ArrayList<>(Collections.nCopies(4,new Cell("-")));
-    private List<Cell> rowCell2 = new ArrayList<>(Collections.nCopies(4,new Cell("-")));
-    private List<Cell> rowCell3 = new ArrayList<>(Collections.nCopies(4,new Cell("-")));
-    private List<Cell> rowCell4 = new ArrayList<>(Collections.nCopies(4,new Cell("-")));
-    private List<Cell> rowCell5 = new ArrayList<>(Collections.nCopies(4,new Cell("-")));
-    private List<Cell> rowCell6 = new ArrayList<>(Collections.nCopies(4,new Cell("-")));
-    private List<Cell> rowCell7 = new ArrayList<>(Collections.nCopies(4,new Cell("-")));
-    private List<Cell> rowCell8 = new ArrayList<>(Collections.nCopies(4,new Cell("-")));
-     */
+
     private List<Cell> rowCell1;
     private List<Cell> rowCell2;
     private List<Cell> rowCell3;
@@ -108,12 +100,32 @@ public class PlanScheduleActivity extends AppCompatActivity{
     TableView.LayoutParams params_table;
     public static int pos_edit = 0;
     private static final int RC_PlAN_SCH = 1010;
-    public static boolean CHECK_ACCESS_PLANSCH;
     PlanItem planItem;
     int days_num;
 
     LinearLayout lin_table;
     LinearLayout lin_frag;
+
+
+    OnGetDataListener onGetDataListener_Sch = new OnGetDataListener() {
+        @Override
+        public void onSuccess() {
+            Log.i(TAG,"----onSuccess ---- :" + "1   " + mCellList.get(0).get(0).getPlaceText() );
+            myTableViewAdapter.setCellItems(mCellList);
+        }
+
+        @Override
+        public void onStart() {
+
+        }
+
+        @Override
+        public void onFailure() {
+
+        }
+    };
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,14 +136,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
         planItem = intent.getParcelableExtra("planItem");
         days_num = planItem.getDayNum();
         String selectedDays = planItem.getSelectedDays();
-        col_day = new String[days_num];
-        col_day_firebase = new String[days_num];
-        for (int i = 0; i < days_num; i++) {
-            col_day[i] = selectedDays.substring(5 * i + 4, 5 * i + 9);
-            col_day_firebase[i] = (i+1) + "일" + col_day[i].replace(".","");
-            Log.i("TAG", "----col_day----" + col_day[i]);
-            Log.i("TAG", "----col_day----" + col_day_firebase[i]);
-        }
+
         rowCell1 = new ArrayList<>(Collections.nCopies(days_num,new Cell("-")));
         rowCell2 = new ArrayList<>(Collections.nCopies(days_num,new Cell("-")));
         rowCell3 = new ArrayList<>(Collections.nCopies(days_num,new Cell("-")));
@@ -141,9 +146,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
         rowCell7 = new ArrayList<>(Collections.nCopies(days_num,new Cell("-")));
         rowCell8 = new ArrayList<>(Collections.nCopies(days_num,new Cell("-")));
 
-
         PlanMainActivity.FIRST_READ_MAIN = false;
-        CHECK_ACCESS_PLANSCH = true;
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         initData();
         onCreateView();
@@ -166,7 +169,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
     @Override
     public void onDestroy(){
         super.onDestroy();
-        CHECK_ACCESS_PLANSCH = false;
+
         Log.i("TAG", "----onDestroy planSchedule----");
     }
 
@@ -202,7 +205,11 @@ public class PlanScheduleActivity extends AppCompatActivity{
         btn_refreshSchedule.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                myTableViewAdapter.setCellItems(mCellList);
+                Log.i(TAG,"----ReFresh Check ---- : ");
+                readDataFromDB(dbDataReference_1);
+                onGetDataListener_Sch.onSuccess();
+                //myTableViewAdapter.notifyDataSetChanged();
+
             }
         });
 
@@ -232,7 +239,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
 
         List<ColumnHeader> columnHeaders = new ArrayList<>();
         for(int i=0; i<days_num;i++){
-            columnHeaders.add(new ColumnHeader(col_day[i]));
+            columnHeaders.add(new ColumnHeader(PlanMainActivity.col_day[i]));
         }
 
         // add data into RowHeaders
@@ -252,7 +259,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
 
 
     private void loadDataAndReceive(){
-
+        Log.i(TAG,"----loadDataAndReceive : PlanSch----");
 
         dbReference_1 = (DatabaseReferenceData) getApplication();
         dbReference_1.setContext(this);
@@ -271,10 +278,12 @@ public class PlanScheduleActivity extends AppCompatActivity{
 
     private void readDataFromDB(DatabaseReference refDatabase) {
 
+        readData(refDatabase);
+        /*
         readData(refDatabase, new OnGetDataListener() {
             @Override
             public void onSuccess(DataSnapshot dataSnapshot) {
-                Log.i("TAG","----onSuccess : PlanSch----");
+                Log.i(TAG,"----onSuccess ---- :" + "1   " + mCellList.get(0).get(0).getPlaceText() );
                 myTableViewAdapter.setCellItems(mCellList);
             }
             @Override
@@ -285,22 +294,25 @@ public class PlanScheduleActivity extends AppCompatActivity{
             }
         });
 
+         */
+
     }
 
     public interface OnGetDataListener{
-        void onSuccess(DataSnapshot dataSnapshot);
+        void onSuccess();
         void onStart();
         void onFailure();
     }
 
 
-    public void readData(DatabaseReference ref, final OnGetDataListener listener) {
-        listener.onStart();
+    public void readData(DatabaseReference ref) {
+        onGetDataListener_Sch.onStart();
+        Log.i(TAG,"----readData : PlanSch----");
 
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Log.i("TAG","----onDataChange : PlanSch----");
+                Log.i(TAG,"----onDataChange : PlanSch----");
                 for (DataSnapshot snapshot_1 : dataSnapshot.getChildren()){
                     for (DataSnapshot snapshot_2 : snapshot_1.getChildren()){
                         RealtimeData dataReal = snapshot_2.getValue(RealtimeData.class);
@@ -330,12 +342,13 @@ public class PlanScheduleActivity extends AppCompatActivity{
 
                     }
                 }
-                listener.onSuccess(dataSnapshot);
+                onGetDataListener_Sch.onSuccess();
+
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-                listener.onFailure();
+                onGetDataListener_Sch.onFailure();
             }
         });
 
@@ -449,7 +462,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
 
             String time_s = time_val.get(pos).toString();
 
-            dbDataReference_1.child(col_day_firebase[col_pos]).addListenerForSingleValueEvent(new ValueEventListener() {
+            dbDataReference_1.child(PlanMainActivity.col_day_firebase[col_pos]).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     for (DataSnapshot child : snapshot.getChildren()) {
@@ -517,7 +530,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
                 dbDataReference_1 = dbReference_1.getDbPlanScheduleRef().child(planitemkey);
                 HashMap<String, Object> dataN = new HashMap<>();
                 RealtimeData data_edit = new RealtimeData(placeVal, memoVal, hourVal, minVal, col_pos + 1);
-                String day = col_day_firebase[col_pos];
+                String day = PlanMainActivity.col_day_firebase[col_pos];
                 dataN.put(String.valueOf(time_add), data_edit);
                 dbDataReference_1.child(day).child(time_del).removeValue();
                 dbDataReference_1.child(day).updateChildren(dataN);
@@ -544,12 +557,12 @@ public class PlanScheduleActivity extends AppCompatActivity{
 
             }
             if(resultCode == EditPlanScheduleChange.RC_EDIT_PLAN_DEL){
-                Log.i("TAG", "----EnterCheck---- : ");
+                Log.i(TAG, "----EnterCheck---- : ");
                 ArrayList<Integer> time_val = mCellList.get(row_pos).get(col_pos).getTime();
                 String time_i = String.valueOf(time_val.get(pos_edit));
                 mCellList.get(row_pos).get(col_pos).delPlace(pos_edit);
                 mCellList.get(row_pos).get(col_pos).delTime(pos_edit);
-                dbDataReference_1.child(col_day_firebase[col_pos]).child(time_i).removeValue();
+                dbDataReference_1.child(PlanMainActivity.col_day_firebase[col_pos]).child(time_i).removeValue();
 
                 myTableViewAdapter.setCellItems(mCellList);
                 Cell_edit = mCellList.get(row_pos).get(col_pos);
@@ -559,6 +572,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
             }
 
             if (resultCode == EditPlanScheduleActivity.RC_EDIT_PLAN){
+                Log.i(TAG,"----RC_EDIT_PLAN 1 ---- : " );
                 if(!(data==null)) {
                     Cell_edit = mCellList.get(row_pos).get(col_pos);
                     String hourVal = data.getExtras().getString("hourVal");
@@ -586,7 +600,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
                     dbDataReference_1 = dbReference_1.getDbPlanScheduleRef().child(planitemkey);
                     HashMap<String, Object> dataN = new HashMap<>();
                     RealtimeData data_edit = new RealtimeData(placeVal, memoVal, hourVal, minVal, col_pos + 1);
-                    String day = col_day_firebase[col_pos];
+                    String day = PlanMainActivity.col_day_firebase[col_pos];
                     dataN.put(String.valueOf(t), data_edit);
                     dbDataReference_1.child(day).updateChildren(dataN);
 
@@ -594,6 +608,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
                     if (Cell_edit.getData() == "-") {
                         Cell cellAdd = new Cell(placeVal, placeVal, t);
                         mCellList.get(row_pos).set(col_pos, cellAdd);
+                        Log.i(TAG,"----RC_EDIT_PLAN 3 ---- : " + mCellList.get(row_pos).get(col_pos).getPlaceText());
                     } else {
                         String before_place = Cell_edit.getData().toString();
                         String place = before_place + "\n" + placeVal;
@@ -603,9 +618,12 @@ public class PlanScheduleActivity extends AppCompatActivity{
                         int inD = cellAdd.getTime().indexOf(t);
                         cellAdd.addPlace(placeVal, inD);
                         mCellList.get(row_pos).set(col_pos, cellAdd);
+                        Log.i(TAG,"----RC_EDIT_PLAN 2 ---- : " + mCellList.get(row_pos).get(col_pos).getPlaceText() );
                     }
 
+
                     myTableViewAdapter.setCellItems(mCellList);
+                    //myTableViewAdapter.notifyDataSetChanged();
 
                     getSupportFragmentManager().popBackStack();
                     getSupportFragmentManager().beginTransaction().replace(R.id.frame_contain_in, new PlaceWindowFragment(Cell_edit))

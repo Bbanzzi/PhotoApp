@@ -18,6 +18,8 @@ import com.example.photoapp.R;
 
 public class PlanScheduleRecyclerAdapter extends  AbstractTableAdapter<ColumnHeader, RowHeader, Cell> {
 
+    private static final String TAG = "PlanScheduleRecyclerAdapter";
+
     private static final String Log_Adp = PlanScheduleRecyclerAdapter.class.getSimpleName();
 
     /*
@@ -103,12 +105,11 @@ public class PlanScheduleRecyclerAdapter extends  AbstractTableAdapter<ColumnHea
         if(columnPosition % 2 == 1){
             viewHolder.cell_container.setBackgroundColor(Color.parseColor("#000000"));
         }
-
          */
 
-        if(!cell.getPlaceText().equals("-")) {
-            viewHolder.cell_textview.setText(cell.getPlaceText());
-        }else{
+        viewHolder.cell_textview.setText(cell.getPlaceText());
+
+        if( cell.getPlaceText() == "-"){
             viewHolder.cell_textview.setVisibility(View.INVISIBLE);
         }
 
@@ -319,13 +320,6 @@ public class PlanScheduleRecyclerAdapter extends  AbstractTableAdapter<ColumnHea
         // type of CellViewHolder on "onCreateCellViewHolder"
         return 0;
     }
-
-
-
-
-
-
-
 
 
 }
