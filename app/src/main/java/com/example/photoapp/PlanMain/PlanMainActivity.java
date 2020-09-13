@@ -222,7 +222,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         Log.i(TAG, "----onDestroy main----");
         FIRST_READ_MAIN = true;
         //listener 제거하기기
-
        if (receiver != null) {
             this.unregisterReceiver(receiver);
         }
@@ -248,9 +247,9 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             @Override
             public void onSuccess() {
                 // 읽어왔을때 작업할 것
+                Log.i("TAG","----adapter.onSuccess----");
                 ReadDbSchedule=true;
                 adapter.notifyDataSetChanged(); // pagerstate의 getitemposition이 실행됨
-                Log.i("TAG","----adapter.onSuccess----");
             }
 
             @Override
@@ -304,7 +303,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             setActionBar();
             viewPager = (ViewPager) findViewById(R.id.viewPager);
 
-            adapter = new PlanPagerAdapter(getSupportFragmentManager(), realTimeDataArrayList, 1);
+            adapter = new PlanPagerAdapter(getSupportFragmentManager(),planItem, realTimeDataArrayList, 1);
             adapter.setDays(days);
             //뷰 페이저
             viewPager.setOffscreenPageLimit(5);
@@ -526,7 +525,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         /*
             realTimeDataArrayList.clear();
-            Log.i(TAG, "----readPlanSchedule realTimeArray Clear----");
             for (int i = 0; i < days; i++) {
                 ArrayList<RealtimeData> EmptyRealTimeData = new ArrayList<RealtimeData>();
                 EmptyRealTimeData.add(new RealtimeData());
@@ -652,8 +650,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             }
             @Override
             public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                Log.i(TAG,"----onChildRemoved----" + snapshot.getKey());
                 int inDex = Character.getNumericValue(snapshot.getKey().charAt(0));
-                Log.i(TAG,"----onChildRemoved----" + realTimeDataArrayList.get(inDex-1).size());
                 realTimeDataArrayList.get(inDex-1).remove(1);
                 onGetDataListener_Main.onSuccess();
 
@@ -983,7 +981,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).updateChildren(photos);
                 mOnKeyBackPressedListener.onBack(true);
                 changeCheckState(!checkBoxState);
-                adapter.notifyDataSetChanged();
+                MyDeletion=true;
+                //adapter.notifyDataSetChanged();
             }
         });
         dialog.show();

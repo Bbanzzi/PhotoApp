@@ -70,6 +70,7 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_planlist);
 
+
         //구글 인증
         // dynamiclink로 들어왔을때 이것도 미완성
         checkDynamicLink();

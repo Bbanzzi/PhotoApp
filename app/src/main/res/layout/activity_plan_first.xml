@@ -83,6 +83,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="#fff"
+                android:nestedScrollingEnabled="false"
                 app:allow_click_inside_cell="true"
                 app:allow_click_inside_column_header="false"
                 app:allow_click_inside_row_header="false"

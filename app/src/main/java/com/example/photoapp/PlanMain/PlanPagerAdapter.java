@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 
+import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanSchedule.RealtimeData;
 import com.google.photos.types.proto.Album;
 import com.google.photos.types.proto.MediaItem;
@@ -23,9 +24,11 @@ public class PlanPagerAdapter extends FragmentStatePagerAdapter {
     private int days;
     private ArrayList<String> titles = new ArrayList<>();
     private ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList;
+    private PlanItem planItem;
 
-    public PlanPagerAdapter(@NonNull FragmentManager fm, ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList, int behavior) {
+    public PlanPagerAdapter(@NonNull FragmentManager fm, PlanItem planItem, ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList, int behavior) {
         super(fm, behavior);
+        this.planItem=planItem;
         this.realTimeDataArrayList = realTimeDataArrayList;
     }
 
@@ -33,7 +36,7 @@ public class PlanPagerAdapter extends FragmentStatePagerAdapter {
     @Override
     public PlanFragment getItem(int position) {
         Log.d(TAG, " postiion");
-        return PlanFragment.newInstance(position, titles.get(position), realTimeDataArrayList.get(position));//,titles.get(position));
+        return PlanFragment.newInstance(position, planItem, titles.get(position), realTimeDataArrayList.get(position));//,titles.get(position));
     }
 
     @Override
