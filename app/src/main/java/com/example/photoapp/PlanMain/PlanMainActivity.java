@@ -125,16 +125,38 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private static boolean AllListingPhotos=false; // 모든 사진을 처음 다 정렬함
 
     public static boolean FIRST_READ_MAIN = true;
+    public static boolean NOW_READ_MAIN = true;
     public static boolean CHECK_EDIT_MAIN = false;
     public static boolean CHECK_DEL_MAIN = false;
     public static boolean CHECK_CHA_MAIN = false;
-    public static int DAY_CHECK_firebase = 1;
     Bundle saveInstanceState_re;
+    public static String[] col_day;
+    public static String[] col_day_firebase;
+
+    OnGetDataListener onGetDataListener_Main = new OnGetDataListener() {
+        @Override
+        public void onStart() {
+
+        }
+
+        @Override
+        public void onSuccess() {
+            ReadDbSchedule=true;
+            adapter.notifyDataSetChanged(); // pagerstate의 getitemposition이 실행됨
+            Log.i("TAG","----adapter.onSuccess----");
+        }
+
+        @Override
+        public void onFailed(DatabaseError databaseError) {
+
+        }
+    };
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_planmain);
+
 
         saveInstanceState_re = savedInstanceState;
 
@@ -150,6 +172,12 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         days = (int) planItem.getDayNum();
         selectDays = planItem.getSelectedDays();
+        col_day = new String[days];
+        col_day_firebase = new String[days];
+        for (int i = 0; i < days; i++) {
+            col_day[i] = selectDays.substring(5 * i + 4, 5 * i + 9);
+            col_day_firebase[i] = (i+1) + "일" + col_day[i].replace(".","");
+        }
 
         btn_back_inPlanMain=(ImageButton)findViewById(R.id.btn_back_inPlanMain);
         planschedulebtn=(ImageButton)findViewById(R.id.btn_menu);
@@ -184,7 +212,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         super.onPause();
         Log.i(TAG, "----onPause main----");
         FIRST_READ_MAIN = false;
-        Log.i(TAG, "----onPause main2----");
+        NOW_READ_MAIN = false;
     }
 
 
@@ -193,8 +221,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         super.onDestroy();
         Log.i(TAG, "----onDestroy main----");
         FIRST_READ_MAIN = true;
-        DAY_CHECK_firebase = 1;
         //listener 제거하기기
+
        if (receiver != null) {
             this.unregisterReceiver(receiver);
         }
@@ -209,7 +237,10 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     @Override
     public void onStart () {
         super.onStart();
-        DAY_CHECK_firebase = 1;
+        NOW_READ_MAIN = true;
+        //listener 제거?
+        readPlanSchedule(planItem.getKey());
+        /*
         readPlanSchedule(planItem.getKey(), new OnGetDataListener() {
             @Override
             public void onStart() { }
@@ -217,14 +248,16 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             @Override
             public void onSuccess() {
                 // 읽어왔을때 작업할 것
-                Log.i("TAG","----adapter.onSuccess----");
                 ReadDbSchedule=true;
                 adapter.notifyDataSetChanged(); // pagerstate의 getitemposition이 실행됨
+                Log.i("TAG","----adapter.onSuccess----");
             }
 
             @Override
             public void onFailed(DatabaseError databaseError) { }
         });
+
+         */
 
         readTrashPhotos(new OnTrashDataListener() {
             @Override
@@ -488,17 +521,21 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     }
 
     // data 읽어오는 비동기화 작업
-    public void readPlanSchedule(String child, OnGetDataListener listener1) {
-        listener1.onStart();
-        if(PlanScheduleActivity.CHECK_ACCESS_PLANSCH) {
+    public void readPlanSchedule(String child) {
+        onGetDataListener_Main.onStart();
+
+        /*
             realTimeDataArrayList.clear();
+            Log.i(TAG, "----readPlanSchedule realTimeArray Clear----");
             for (int i = 0; i < days; i++) {
                 ArrayList<RealtimeData> EmptyRealTimeData = new ArrayList<RealtimeData>();
                 EmptyRealTimeData.add(new RealtimeData());
                 realTimeDataArrayList.add(EmptyRealTimeData);
             }
-        }
-        Log.i("TAG", "----readPlanSchedule----");
+
+         */
+
+        Log.i(TAG, "----readPlanSchedule----");
         dbReference.getDbPlanScheduleRef().child(child).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -515,75 +552,120 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String previousChildName) {
-                Log.i("TAG", "----onChildChanged----");
-                if(CHECK_DEL_MAIN || CHECK_CHA_MAIN){
-                    int i = 0;
-                    for( RealtimeData searchData : realTimeDataArrayList.get(day_check) ){
-                        if(searchData.getTime() == time_check){
-                            realTimeDataArrayList.get(day_check).remove(i);
-                            if(CHECK_DEL_MAIN) {
-                                listener1.onSuccess();
-                            }
-                            CHECK_DEL_MAIN = false;
-                            break;
-                        }
-                        i++;
-                    }
-                }
+
                 int inDex = Character.getNumericValue(dataSnapshot.getKey().charAt(0));
-                if(dataSnapshot.exists() && (CHECK_EDIT_MAIN || CHECK_CHA_MAIN)){
-                    int i = 1;
-                    for(DataSnapshot snapshot : dataSnapshot.getChildren()){
-                        RealtimeData realtimeData = snapshot.getValue(RealtimeData.class);
-                        try {
-                            if (Integer.parseInt(snapshot.getKey()) != realTimeDataArrayList.get(inDex - 1).get(i).getTime()) {
-                                realTimeDataArrayList.get(inDex - 1).add(i, realtimeData);
-                                listener1.onSuccess();
-                                CHECK_EDIT_MAIN = false;
-                                CHECK_CHA_MAIN = false;
+                Log.i(TAG, "----onChildChanged---- : " + dataSnapshot.getKey() + "  " + inDex);
+
+                Log.i(TAG, "----Enter onChildChanged else---- : ");
+                ArrayList<RealtimeData> addRealTimeData = new ArrayList<>();
+                addRealTimeData.add(new RealtimeData());
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    RealtimeData realtimeData = snapshot.getValue(RealtimeData.class);
+                    addRealTimeData.add(realtimeData);
+                }
+                realTimeDataArrayList.get(inDex-1).clear();
+                realTimeDataArrayList.get(inDex-1).addAll(addRealTimeData);
+                onGetDataListener_Main.onSuccess();
+
+                /*
+                if(CHECK_DEL_MAIN || CHECK_CHA_MAIN || CHECK_EDIT_MAIN ) {
+                    Log.i(TAG,"----onChildChanged first loop check---- ");
+                    if (CHECK_DEL_MAIN || CHECK_CHA_MAIN) {
+                        Log.i(TAG, "----onChildChanged 1 Enter----" + CHECK_DEL_MAIN + " : " + CHECK_CHA_MAIN);
+                        int i = 0;
+                        for (RealtimeData searchData : realTimeDataArrayList.get(day_check)) {
+                            if (searchData.getTime() == time_check) {
+                                realTimeDataArrayList.get(day_check).remove(i);
+                                if (CHECK_DEL_MAIN) {
+                                    onGetDataListener_Main.onSuccess();
+                                }
+                                CHECK_DEL_MAIN = false;
                                 break;
                             }
-                        }catch (IndexOutOfBoundsException e){
-                            CHECK_EDIT_MAIN = false;
-                            CHECK_CHA_MAIN = false;
-                            realTimeDataArrayList.get(inDex-1).add(realtimeData);
-                            listener1.onSuccess();
+                            i++;
+                        }
+                    }
+                    if (dataSnapshot.exists() && (CHECK_EDIT_MAIN || CHECK_CHA_MAIN)) {
+                        Log.i(TAG, "----onChildChanged 2 Enter----" + CHECK_EDIT_MAIN + " : " + CHECK_CHA_MAIN);
+                        int i = 1;
+                        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                            RealtimeData realtimeData = snapshot.getValue(RealtimeData.class);
+                            try {
+                                if (Integer.parseInt(snapshot.getKey()) != realTimeDataArrayList.get(inDex - 1).get(i).getTime()) {
+                                    realTimeDataArrayList.get(inDex - 1).add(i, realtimeData);
+                                    onGetDataListener_Main.onSuccess();
+                                    CHECK_EDIT_MAIN = false;
+                                    CHECK_CHA_MAIN = false;
+                                    break;
+                                }
+                            } catch (IndexOutOfBoundsException e) {
+                                CHECK_EDIT_MAIN = false;
+                                CHECK_CHA_MAIN = false;
+                                realTimeDataArrayList.get(inDex - 1).add(realtimeData);
+                                Log.i(TAG, "----outofboundException1---- : ");
+                                onGetDataListener_Main.onSuccess();
+                            }
+
+                            i++;
                         }
 
-                        i++;
                     }
-
+                }else{
+                    Log.i(TAG, "----Enter onChildChanged else---- : ");
+                    ArrayList<RealtimeData> addRealTimeData = new ArrayList<>();
+                    addRealTimeData.add(new RealtimeData());
+                    for(DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        RealtimeData realtimeData = snapshot.getValue(RealtimeData.class);
+                        addRealTimeData.add(realtimeData);
+                    }
+                    realTimeDataArrayList.get(inDex-1).clear();
+                    realTimeDataArrayList.get(inDex-1).addAll(addRealTimeData);
+                    onGetDataListener_Main.onSuccess();
                 }
+
+                 */
             }
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName){
-                Log.i("TAG", "----onChildAdded---- : " + snapshot.getKey() );
-                if(snapshot.exists() && (FIRST_READ_MAIN || PlanScheduleActivity.CHECK_ACCESS_PLANSCH)) {
-                    if(!snapshot.getKey().contains(String.valueOf(DAY_CHECK_firebase))){
-                        DAY_CHECK_firebase++;
-                    }
+                Log.i(TAG, "----onChildAdded---- : " + snapshot.getKey() );
+                String index_check = snapshot.getKey();
+                int DAY_CHECK_FIRE = Character.getNumericValue(index_check.charAt(0));
+                if(snapshot.exists() && (FIRST_READ_MAIN )) {
+                    int i = 1;
                     for (DataSnapshot snapshot1 : snapshot.getChildren()) {
                         RealtimeData realtimeData1 = snapshot1.getValue(RealtimeData.class);
-                        realTimeDataArrayList.get(DAY_CHECK_firebase-1).add(realtimeData1);
+                        realTimeDataArrayList.get(DAY_CHECK_FIRE-1).add(realtimeData1);
+                        Log.i(TAG, "----check snapshot1 enter---- : " + realTimeDataArrayList.get(DAY_CHECK_FIRE-1).get(i).getPlace() );
+                        i++;
                        }
-                    listener1.onSuccess();
-                    DAY_CHECK_firebase++;
+                    onGetDataListener_Main.onSuccess();
+                }else{
+                    if(realTimeDataArrayList.get(DAY_CHECK_FIRE-1).size() == 1){
+                        for (DataSnapshot snapshot1 : snapshot.getChildren()) {
+                            RealtimeData realtimeData1 = snapshot1.getValue(RealtimeData.class);
+                            realTimeDataArrayList.get(DAY_CHECK_FIRE - 1).add(realtimeData1);
+                            Log.i(TAG, "----check snapshot1 enter---- : " + realtimeData1.getPlace());
+                        }
+                        onGetDataListener_Main.onSuccess();
+                    }
                 }
             }
             @Override
             public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                Log.i("TAG","----onChildRemoved----");
-
+                int inDex = Character.getNumericValue(snapshot.getKey().charAt(0));
+                Log.i(TAG,"----onChildRemoved----" + realTimeDataArrayList.get(inDex-1).size());
+                realTimeDataArrayList.get(inDex-1).remove(1);
+                onGetDataListener_Main.onSuccess();
 
             }
             @Override
             public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                Log.i("TAG","----onChildMoved----");
+                Log.i(TAG,"----onChildMoved----");
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                listener1.onFailed(databaseError);
-                Log.i("TAG","----onCancelled----");
+                onGetDataListener_Main.onFailed(databaseError);
+                Log.i(TAG,"----onCancelled----");
             }
         });
     }
@@ -599,17 +681,17 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == RC_PLAN_MAIN){
             if(resultCode == EditPlanScheduleChange.RC_EDIT_PLAN_DEL){
-                Log.i("TAG","----onActivityResult:MainDEL----");
+                Log.i(TAG,"----onActivityResult:MainDEL----");
 
                 CHECK_DEL_MAIN = true;
                 String time_i = String.valueOf(data.getExtras().getInt("time"));
-                String day = PlanScheduleActivity.col_day_firebase[day_check];
+                String day = col_day_firebase[day_check];
                 dbReference.getDbPlanScheduleRef().child(planItem.getKey()).child(day).child(time_i).removeValue();
 
 
             }
             if(resultCode == EditPlanScheduleChange.RC_EDIT_PLAN_CHA){
-                Log.i("TAG","----onActivityResult:MainCHA----");
+                Log.i(TAG,"----onActivityResult:MainCHA----");
 
                 CHECK_CHA_MAIN = true;
                 String hourVal = data.getExtras().getString("hourVal");
@@ -628,7 +710,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                     time_add = (Integer.parseInt(hourVal)+12) * 60 + Integer.parseInt(minVal);
                     hourVal = String.valueOf( Integer.parseInt(hourVal) + 12);
                 }
-                String day = PlanScheduleActivity.col_day_firebase[day_check];
+                String day = col_day_firebase[day_check];
                 String time_i = String.valueOf(time_add);
                 dbReference.getDbPlanScheduleRef().child(planItem.getKey()).child(day).child(time_orgin).removeValue();
 
@@ -638,7 +720,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 dbReference.getDbPlanScheduleRef().child(planItem.getKey()).child(day).updateChildren(dataN);
             }
             if(resultCode == EditPlanScheduleActivity.RC_EDIT_PLAN){
-                Log.i("TAG","----onActivityResult:MainPLAN----");
+                Log.i(TAG,"----onActivityResult:MainPLAN----");
                 CHECK_EDIT_MAIN = true;
 
                 String hourVal = data.getExtras().getString("hourVal");
@@ -662,7 +744,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 dbDataReference_2 = dbReference_2.getDbPlanScheduleRef().child(planItem.getKey());
                 HashMap<String, Object> dataN = new HashMap<>();
                 RealtimeData data_edit = new RealtimeData(placeVal, memoVal, hourVal, minVal, day_check + 1);
-                String day = PlanScheduleActivity.col_day_firebase[day_check];
+                String day = col_day_firebase[day_check];
                 dataN.put(String.valueOf(time_add), data_edit);
                 dbDataReference_2.child(day).updateChildren(dataN);
 
