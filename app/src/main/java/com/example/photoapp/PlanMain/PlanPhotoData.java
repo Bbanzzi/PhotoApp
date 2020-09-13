@@ -1,14 +1,18 @@
 package com.example.photoapp.PlanMain;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.text.format.DateFormat;
 
+import com.example.photoapp.PlanSchedule.RealtimeData;
 import com.google.protobuf.Timestamp;
 
+import java.sql.Time;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Objects;
 
-public class PlanPhotoData {
+public class PlanPhotoData implements Parcelable {
 
     private String place;
     private String memo;
@@ -45,6 +49,20 @@ public class PlanPhotoData {
     }
     // for Photo delete Request
     public PlanPhotoData(String Id){ this.Id=Id; }
+
+    private  PlanPhotoData(Parcel in) {
+        place=in.readString();
+        memo=in.readString();
+        time = in.readString();
+        time_i = in.readInt();
+
+        filename = in.readString();
+        Id = in.readString();
+        imageUrl = in.readString();
+
+        creationTimeLong = in.readLong();
+        creationTime = Timestamp.newBuilder().setSeconds(creationTimeLong).build();
+    }
 
 
     public String getPlace() { return place; }
@@ -85,4 +103,40 @@ public class PlanPhotoData {
         String date = DateFormat.format("dd-MM-yyyy HH:mm:ss", cal).toString();
         return cal;
     }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+
+        dest.writeString(place);
+        dest.writeString(memo);
+        dest.writeString(time);
+        dest.writeInt(time_i);
+
+        dest.writeString(filename);
+        dest.writeString(Id);
+        dest.writeString(imageUrl);
+        if(creationTimeLong!=null) {
+            dest.writeLong(creationTimeLong);
+        }else{
+            dest.writeLong(0);
+        }
+    }
+
+
+    public static final Creator<PlanPhotoData> CREATOR = new Creator<PlanPhotoData>() {
+        @Override
+        public PlanPhotoData createFromParcel(Parcel in) {
+            return new PlanPhotoData(in);
+        }
+
+        @Override
+        public PlanPhotoData[] newArray(int size) {
+            return new PlanPhotoData[size];
+        }
+    };
 }

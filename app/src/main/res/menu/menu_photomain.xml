@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/appbar_menu_delete"
+        android:icon="@drawable/ic_baseline_delete_white_24"
+        app:showAsAction="always"
+        android:title="delete" />
+    <item
+        android:id="@+id/appbar_menu_download"
+        android:icon="@drawable/ic_get_app_white_24dp"
+        app:showAsAction="ifRoom"
+        android:title="donwload" />
+    <item
+        android:id="@+id/appbar_menu_info"
+        android:title="정보"
+        android:icon="@drawable/ic_baseline_info_white_24"
+        app:showAsAction="ifRoom" />
+</menu>

@@ -53,6 +53,7 @@ public class PhotoRequestSupplier implements Supplier<List<List<PlanPhotoData>>>
 
             InternalPhotosLibraryClient.SearchMediaItemsPagedResponse response = GooglePhotoReference.getPhotosLibraryClient().searchMediaItems(albumId);
 
+
             for (MediaItem item : response.iterateAll()) {
                 String id = item.getId();
                 String description = item.getDescription();
