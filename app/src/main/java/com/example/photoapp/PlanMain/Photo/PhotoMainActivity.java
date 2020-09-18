@@ -124,21 +124,6 @@ public class PhotoMainActivity extends AppCompatActivity implements ZoomableImag
         int uiOptions=getWindow().getDecorView().getSystemUiVisibility();
         isImmersiveMode= ((uiOptions | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY) == uiOptions);
 
-        // Viewpager listener
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-            }
-        });
-
     }
 
     @Override
