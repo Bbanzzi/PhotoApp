@@ -7,7 +7,7 @@
     android:id="@+id/constraintlayout_photomain"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <ImageView
+    <com.example.photoapp.PlanMain.Photo.ZoomableImageView
         android:id="@+id/imageview_photomain"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
