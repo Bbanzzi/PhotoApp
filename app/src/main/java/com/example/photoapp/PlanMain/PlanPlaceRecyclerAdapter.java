@@ -159,7 +159,7 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
                 @Override
                 public void onClick(View v) {
                     Log.i(TAG, "On Click");
-                    photoListener.onPhotoItemSelected(v,getAdapterPosition());
+                    photoListener.onPhotoItemSelected(v,checkBoxState,getAdapterPosition());
                 }
             });
             imageView.setOnLongClickListener(new View.OnLongClickListener() {
@@ -195,6 +195,7 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
                 checkBox.setVisibility(View.VISIBLE);
             } else {
                 checkBox.setVisibility(View.GONE);
+                resetCheckBox();
             }
 
             checkBox.setChecked(planPhotoData.getCheck());
@@ -217,7 +218,7 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
     //클릭 처리 plan을 눌렀을 때https://thepassion.tistory.com/300
     public interface OnPhotoItemSelectedInterface {
-        void onPhotoItemSelected(View v, int position);
+        void onPhotoItemSelected(View v, Boolean checkState, int position);
     }
     public interface OnPhotoItemLongSelectedInterface {
         void onPhotoItemLongSelected(View v, Boolean checkState, int position);
@@ -233,5 +234,10 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
     public void setCheckBoxState(Boolean checkBoxState2){
         checkBoxState=checkBoxState2;
+    }
+    public void resetCheckBox(){
+        for(PlanPhotoData planPhotoData: list) {
+            planPhotoData.setCheck(false);
+        }
     }
 }

@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class PhotoMainActivity extends AppCompatActivity implements PhotoFragment.onFullScreenListener{
+public class PhotoMainActivity extends AppCompatActivity implements ZoomableImageView.onFullScreenListener{
 
     private static String TAG="PHotoMainAcitivity";
 
@@ -102,6 +102,7 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
         setSupportActionBar(toolbar);
 
         actionBar = getSupportActionBar();
+        actionBar.setDisplayShowTitleEnabled(false);
         toolbar.setNavigationOnClickListener(v -> finish());
 
         adapter = new PhotoPagerAdapter(getSupportFragmentManager(), planPhotoDataList, 1);
@@ -118,7 +119,7 @@ public class PhotoMainActivity extends AppCompatActivity implements PhotoFragmen
         //Immersive mode
         hideSystemUI();
         actionBar.hide();
-        PhotoFragment.setOnfullScreenListener(this);
+        ZoomableImageView.setOnfullScreenListener(this);
         // when click image, the system and menu represented
         int uiOptions=getWindow().getDecorView().getSystemUiVisibility();
         isImmersiveMode= ((uiOptions | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY) == uiOptions);
