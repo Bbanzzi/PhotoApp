@@ -230,6 +230,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     @Override
     public void onResume(){
         super.onResume();
+        changeCheckState(false);
         Log.i(TAG, "----onResume main----");
     }
 

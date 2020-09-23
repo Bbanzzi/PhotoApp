@@ -104,6 +104,7 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
         super.onStart();
     }
 
+
     public String getTitle(){
         return this.title;
     }
@@ -151,8 +152,11 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
     }
 
     @Override
-    public void onPhotoItemSelected(View v, int position) {
+    public void onPhotoItemSelected(View v, Boolean checkBoxState,int position) {
 
+        if(checkBoxState){
+            sectionAdapter.setCheckBoxState(false);
+        }
         Intent intent = new Intent(getContext(), PhotoMainActivity.class);
         intent.putExtra("planItem", planItem);
         intent.putExtra("title", title);
@@ -160,4 +164,5 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
         intent.putExtra("position", position);
         startActivity(intent);
     }
+
 }
