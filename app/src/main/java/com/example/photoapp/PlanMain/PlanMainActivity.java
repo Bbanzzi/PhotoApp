@@ -239,24 +239,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         NOW_READ_MAIN = true;
         //listener 제거?
         readPlanSchedule(planItem.getKey());
-        /*
-        readPlanSchedule(planItem.getKey(), new OnGetDataListener() {
-            @Override
-            public void onStart() { }
-
-            @Override
-            public void onSuccess() {
-                // 읽어왔을때 작업할 것
-                Log.i("TAG","----adapter.onSuccess----");
-                ReadDbSchedule=true;
-                adapter.notifyDataSetChanged(); // pagerstate의 getitemposition이 실행됨
-            }
-
-            @Override
-            public void onFailed(DatabaseError databaseError) { }
-        });
-
-         */
 
         readTrashPhotos(new OnTrashDataListener() {
             @Override
@@ -768,35 +750,38 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         CompletableFuture.runAsync(photoUploadRunnable);
         // 지금은 Thread하나만 이용해서 upload중인데 이거 바꿀생각
 
-        CompletableFuture.supplyAsync(photoRequestSupplier)
-                .thenApply(new Function<List<List<PlanPhotoData>>, List<List<PlanPhotoData>>>() {
-                    @Override
-                    public List<List<PlanPhotoData>> apply(List<List<PlanPhotoData>> lists) {
-                        Log.i(TAG, Thread.currentThread().getName());
-                        //만약 realtimedata가 더 늦게 받아진다면? 그럴일을 거의 없긴함 while(realTimeDataArrayList!=null)
-                        while (!ReadDbSchedule) {
-                            Log.i(TAG, "Not Yet Read Schedule" + ReadDbSchedule);
-                        }
-                        // 처음 delete 밑의것이 true로 바뀜에 따라 onSuccess실행
-                        ReadDBDeletionFirst=true;
-                        PhotoDeleteRequest.DeleteFirstRequest(lists, trashPhotos);
-                        PhotoSortRequest.sortingRequest(planItem, realTimeDataArrayList, lists);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                AllListingPhotos=true;
-                                adapter.notifyDataSetChanged();
+        if ( downLoadOnlyWIFI && wifiConnected
+                || ( !downLoadOnlyWIFI && (wifiConnected || mobileConnected ))) {
+
+            CompletableFuture.supplyAsync(photoRequestSupplier)
+                    .thenApply(new Function<List<List<PlanPhotoData>>, List<List<PlanPhotoData>>>() {
+                        @Override
+                        public List<List<PlanPhotoData>> apply(List<List<PlanPhotoData>> lists) {
+                            Log.i(TAG, Thread.currentThread().getName());
+                            //만약 realtimedata가 더 늦게 받아진다면? 그럴일을 거의 없긴함 while(realTimeDataArrayList!=null)
+                            while (!ReadDbSchedule) {
+                                Log.i(TAG, "Not Yet Read Schedule" + ReadDbSchedule);
                             }
-                        });
+                            // 처음 delete 밑의것이 true로 바뀜에 따라 onSuccess실행
+                            ReadDBDeletionFirst = true;
+                            PhotoDeleteRequest.DeleteFirstRequest(lists, trashPhotos);
+                            PhotoSortRequest.sortingRequest(planItem, realTimeDataArrayList, lists);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    AllListingPhotos = true;
+                                    adapter.notifyDataSetChanged();
+                                }
+                            });
 
-                        if (messageCheck = true) {
-                            showMessage();
+                            if (messageCheck = true) {
+                                showMessage();
+                            }
+                            return lists;
                         }
-                        return lists;
-                    }
-                });
+                    });
 
-
+        }
         /*
         GooglePhotoProvider googlePhotoProvider=new GooglePhotoProvider(token);
         photoBaseUrl = googlePhotoProvider.getPhotoUrl(planItem.getAlbumId());
@@ -903,6 +888,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 // returns to the app.
                 refreshDisplay = true;
                 wifiConnected = true;
+                Toast.makeText(context, "wifi connect", Toast.LENGTH_SHORT).show();
 
                 try {
                     listingAllImage();
@@ -918,7 +904,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             else {
                 refreshDisplay = false;
                 wifiConnected = false;
-                Toast.makeText(context, "lost_connection", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "wifi lost_connection", Toast.LENGTH_SHORT).show();
 
             }
 

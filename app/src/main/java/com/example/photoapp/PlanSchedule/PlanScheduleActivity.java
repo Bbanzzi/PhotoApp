@@ -369,6 +369,7 @@ public class PlanScheduleActivity extends AppCompatActivity{
         @Override
         public void onCellClicked(@NonNull RecyclerView.ViewHolder cellView, int columnPosition, int
                 rowPosition) {
+            Log.i(TAG, "----clicked cell pos ---- : "+ columnPosition + "  " + rowPosition);
 
             FragmentManager manager = getSupportFragmentManager();
             LinearLayout.LayoutParams params1 = (LinearLayout.LayoutParams) lin_table.getLayoutParams();
