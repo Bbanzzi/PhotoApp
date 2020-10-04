@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/constraintlayout_planmain"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".PlanMain.PlanMainActivity"
@@ -58,8 +59,8 @@
 
             <ImageButton
                 android:id="@+id/btn_inviteplanitem"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="?attr/actionBarSize"
+                android:layout_height="?attr/actionBarSize"
                 android:layout_centerVertical="true"
                 android:layout_marginTop="3dp"
                 android:background="#00ff0000"
@@ -70,8 +71,8 @@
 
             <ImageButton
                 android:id="@+id/btn_menu"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="?attr/actionBarSize"
+                android:layout_height="?attr/actionBarSize"
                 android:layout_centerVertical="true"
                 android:background="#00ff0000"
                 android:src="@drawable/ic_menu_black_18dp"
@@ -84,6 +85,15 @@
                 android:layout_width="?attr/actionBarSize"
                 android:layout_height="?attr/actionBarSize"
                 android:src="@drawable/ic_baseline_delete_24"
+                android:background="#00ff0000"
+                android:visibility="gone"
+                app:layout_constraintRight_toLeftOf="@+id/btn_downloadphoto"
+                app:layout_constraintTop_toTopOf="@+id/layout_toolbar_planSchedule"/>
+            <ImageButton
+                android:id="@+id/btn_downloadphoto"
+                android:layout_width="?attr/actionBarSize"
+                android:layout_height="?attr/actionBarSize"
+                android:src="@drawable/ic_get_app_black_24dp"
                 android:background="#00ff0000"
                 android:visibility="gone"
                 app:layout_constraintRight_toLeftOf="@+id/btn_photoselectmenu"

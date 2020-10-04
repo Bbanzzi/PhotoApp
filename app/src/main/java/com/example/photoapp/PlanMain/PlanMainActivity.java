@@ -1,7 +1,7 @@
 package com.example.photoapp.PlanMain;
 
 import android.app.AlertDialog;
-import android.app.Notification;
+import android.app.DownloadManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -17,16 +17,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.util.ArrayMap;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -35,18 +31,18 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.NotificationCompat;
 import androidx.viewpager.widget.ViewPager;
 
 import com.example.photoapp.Data.DatabaseReferenceData;
 import com.example.photoapp.Data.GooglePhotoReference;
-import com.example.photoapp.MainActivity;
 import com.example.photoapp.PlanList.PlanItem;
+import com.example.photoapp.PlanMain.Photo.PhotoDownloadRequest;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoDeleteRequest;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoRequestSupplier;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoSortRequest;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoUploadRunnable;
-import com.example.photoapp.PlanSchedule.Cell;
 import com.example.photoapp.PlanSchedule.EditPlanScheduleActivity;
 import com.example.photoapp.PlanSchedule.EditPlanScheduleChange;
 import com.example.photoapp.PlanSchedule.PlanScheduleActivity;
@@ -62,11 +58,9 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.dynamiclinks.DynamicLink;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.ShortDynamicLink;
-import com.google.protobuf.Timestamp;
 
 import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -117,6 +111,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private ImageButton  planschedulebtn;
     private ImageButton btn_invitePlanItem;
     private ImageButton btn_deletephoto;
+    private ImageButton btn_downloadphoto;
     private ImageButton btn_photoselectmenu;
 
     private static boolean ReadDbSchedule=false; // firebase 가 늦게 읽었을 경우 대비
@@ -132,6 +127,11 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     Bundle saveInstanceState_re;
     public static String[] col_day;
     public static String[] col_day_firebase;
+
+    //Snackbar layout
+    private ConstraintLayout mainlayout;
+    //Download 작업을 위한 Class 객체
+    private PlanMainPhotoDownload planMainPhotoDownload;
 
     OnGetDataListener onGetDataListener_Main = new OnGetDataListener() {
         @Override
@@ -156,7 +156,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_planmain);
-
+        mainlayout =(ConstraintLayout) findViewById(R.id.constraintlayout_planmain);
 
         saveInstanceState_re = savedInstanceState;
 
@@ -183,12 +183,14 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         planschedulebtn=(ImageButton)findViewById(R.id.btn_menu);
         btn_invitePlanItem=(ImageButton) findViewById(R.id.btn_inviteplanitem);
         btn_deletephoto=(ImageButton) findViewById(R.id.btn_deletephoto);
+        btn_downloadphoto=(ImageButton) findViewById(R.id.btn_downloadphoto);
         btn_photoselectmenu=(ImageButton) findViewById(R.id.btn_photoselectmenu);
 
         btn_back_inPlanMain.setOnClickListener(this);
         planschedulebtn.setOnClickListener(this);
         btn_invitePlanItem.setOnClickListener(this);
         btn_deletephoto.setOnClickListener(this);
+        btn_downloadphoto.setOnClickListener(this);
         btn_photoselectmenu.setOnClickListener(this);
 
         for(int i=0; i<days ; i++){
@@ -204,12 +206,17 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         receiver = new NetworkReceiver();
         this.registerReceiver(receiver, filter);
 
+        //다운로드 BroadcastReceiver
+        planMainPhotoDownload=new PlanMainPhotoDownload(this);
+        planMainPhotoDownload.registerDownloadManagerReceiver();
+
     }
 
 
     @Override
     public void onPause(){
         super.onPause();
+
         Log.i(TAG, "----onPause main----");
         FIRST_READ_MAIN = false;
         NOW_READ_MAIN = false;
@@ -226,6 +233,9 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
        if (receiver != null) {
             this.unregisterReceiver(receiver);
         }
+
+        planMainPhotoDownload.unregisterDownloadManagerReceiver();
+
     }
 
     @Override
@@ -292,7 +302,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                     // 2. 내가 삭제하는 경우
                     // 3. 내가 sorting or deletion중에 누군가가 삭제를 하는경우 => 일단 보류류
                     MyDeletion=false;
-                    Log.i(TAG, "doenstaasdfjl");
                 }
 
             }
@@ -365,6 +374,9 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 break;
             case R.id.btn_deletephoto:
                 deleteSelectedPhoto();
+                break;
+            case R.id.btn_downloadphoto:
+                downloadSelectedPhoto();
                 break;
             case R.id.btn_photoselectmenu:
                 Log.i(TAG, "not 구현");
@@ -775,7 +787,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 .thenApply(new Function<List<List<PlanPhotoData>>, List<List<PlanPhotoData>>>() {
                     @Override
                     public List<List<PlanPhotoData>> apply(List<List<PlanPhotoData>> lists) {
-                        Log.i(TAG, Thread.currentThread().getName());
                         //만약 realtimedata가 더 늦게 받아진다면? 그럴일을 거의 없긴함 while(realTimeDataArrayList!=null)
                         while (!ReadDbSchedule) {
                             Log.i(TAG, "Not Yet Read Schedule" + ReadDbSchedule);
@@ -892,6 +903,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         @Override
         public void onReceive(Context context, Intent intent) {
+
+            Log.i(TAG,"THis will be get");
             ConnectivityManager conn = (ConnectivityManager)
                     context.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo networkInfo = conn.getActiveNetworkInfo();
@@ -936,11 +949,13 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             planschedulebtn.setVisibility(View.GONE);
             btn_invitePlanItem.setVisibility(View.GONE);
             btn_deletephoto.setVisibility(View.VISIBLE);
+            btn_downloadphoto.setVisibility(View.VISIBLE);
             btn_photoselectmenu.setVisibility(View.VISIBLE);
         }else{
             planschedulebtn.setVisibility(View.VISIBLE);
             btn_invitePlanItem.setVisibility(View.VISIBLE);
             btn_deletephoto.setVisibility(View.GONE);
+            btn_downloadphoto.setVisibility(View.GONE);
             btn_photoselectmenu.setVisibility(View.GONE);
         }
 
@@ -1050,6 +1065,47 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         }
     };
 
+    // Download 코드
+    private void downloadSelectedPhoto(){
 
+        PhotoDownloadRequest downloadRequest=new PhotoDownloadRequest(this, planItem);
+        List<PlanPhotoData> downloadList=new ArrayList<>();
+        planMainPhotoDownload.setPhotoDownload(downloadRequest, downloadList);
+
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setTitle("알림") ;//제목
+        dialog.setMessage("체크된 사진들을 모두 다운로드합니다.\n정말 다운로드하시겠습니까?"); // 메시지
+
+        dialog.setNegativeButton("취소", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                for(ArrayList<RealtimeData> realtimeDataList: realTimeDataArrayList){
+                    for(RealtimeData realtimeData : realtimeDataList){
+                        Iterator<PlanPhotoData> iterator=realtimeData.getPhotoDataList().iterator();
+                        while (iterator.hasNext()) {
+                            PlanPhotoData planPhotoData = iterator.next();
+                            if(planPhotoData.getCheck()){
+                                //(100+day_index) 최대 3자리가능, 365최대 다시 받아올때 -100
+                                downloadList.add(planPhotoData);
+                            }
+                        }
+                    }
+                }
+                mOnKeyBackPressedListener.onBack(true);
+                changeCheckState(!checkBoxState);
+                //Snackbar
+                // Asnyc작업
+                planMainPhotoDownload.downloadPhotos(mainlayout);
+            }
+        });
+        dialog.show();
+    }
 
 }

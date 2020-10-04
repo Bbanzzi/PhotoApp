@@ -110,7 +110,6 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
     @Override
     public int getItemCount() {
-        Log.i(TAG, "getItemCount()" + list.size());
         return list.size();
     }
 

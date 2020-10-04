@@ -1,39 +1,20 @@
 package com.example.photoapp.Data;
 
-import android.app.Application;
-import android.content.Context;
-import android.os.Build;
 import android.util.Log;
 
-import androidx.annotation.RequiresApi;
-
-import com.example.photoapp.LoginInfoProvider;
-import com.example.photoapp.PlanList.CreatePlanActivity;
-import com.example.photoapp.PlanMain.PlanPhotoData;
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.photos.library.v1.PhotosLibraryClient;
 import com.google.photos.library.v1.PhotosLibrarySettings;
 import com.google.photos.library.v1.internal.InternalPhotosLibraryClient;
-import com.google.photos.library.v1.proto.DateFilter;
-import com.google.photos.library.v1.proto.Filters;
 import com.google.photos.library.v1.proto.JoinSharedAlbumResponse;
 import com.google.photos.library.v1.proto.ShareAlbumResponse;
-import com.google.photos.library.v1.upload.UploadMediaItemRequest;
-import com.google.photos.library.v1.upload.UploadMediaItemResponse;
 import com.google.photos.types.proto.Album;
-import com.google.photos.types.proto.MediaItem;
 import com.google.photos.types.proto.ShareInfo;
 import com.google.photos.types.proto.SharedAlbumOptions;
-import com.google.type.Date;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;

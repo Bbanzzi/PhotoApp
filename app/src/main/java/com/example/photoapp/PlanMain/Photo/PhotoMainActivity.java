@@ -31,6 +31,7 @@ import com.example.photoapp.PlanMain.PlanPagerAdapter;
 import com.example.photoapp.PlanMain.PlanPhotoData;
 import com.example.photoapp.PlanSchedule.RealtimeData;
 import com.example.photoapp.R;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,7 +56,6 @@ public class PhotoMainActivity extends AppCompatActivity implements ZoomableImag
     private String title;
 
     private PhotoDownloadRequest photoDownloadRequest;
-    private List<Long> photoDownloadIdList=new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -179,8 +179,7 @@ public class PhotoMainActivity extends AppCompatActivity implements ZoomableImag
                 showDeletePhotoDialog();
                 return true;
             case R.id.appbar_menu_download:
-                photoDownloadIdList.add(photoDownloadRequest.downloadPhoto(planPhotoDataList.get(viewPager.getCurrentItem())));
-                Toast.makeText(this, "두번째", Toast.LENGTH_SHORT).show();
+                showDownloadPhotoDialog();
                 return true;
             case R.id.appbar_menu_info:
                 Toast.makeText(this, "세번째", Toast.LENGTH_SHORT).show();
@@ -199,6 +198,7 @@ public class PhotoMainActivity extends AppCompatActivity implements ZoomableImag
         return result;
     }
 
+    // 삭제 Dialog
     private void showDeletePhotoDialog(){
         AlertDialog.Builder dialog = new AlertDialog.Builder(this);
         dialog.setMessage("이 사진을 삭제하시겠습니까?");
@@ -235,13 +235,52 @@ public class PhotoMainActivity extends AppCompatActivity implements ZoomableImag
         layoutParams.weight = 10;
         btnPositive.setLayoutParams(layoutParams);
         btnNegative.setLayoutParams(layoutParams);
+
     }
 
+        //삭제 Db 저장, List 삭제
     private void deletePhoto(int position){
         Map<String, Object> photo=new HashMap<>();
         String[] filename =planPhotoDataList.get(position).getFilename().split("\\.");
         photo.put(filename[0], (Integer.parseInt(title.split(" ")[1])-1)+String.valueOf(planPhotoDataList.get(position).getCreationTimeLong()));
         dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).updateChildren(photo);
         planPhotoDataList.remove(viewPager.getCurrentItem());
+        Toast.makeText(this, "삭제 완료" , Toast.LENGTH_SHORT).show();
+    }
+
+    private void showDownloadPhotoDialog(){
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setMessage("이 사진을 다운로드 하시겠습니까?");
+        dialog.setNegativeButton("취소", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        dialog.setPositiveButton("확인",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        photoDownloadRequest.downloadPhoto(planPhotoDataList.get(viewPager.getCurrentItem()));
+                    }
+                });
+        // dlgAlert.create();
+        AlertDialog dialog_card = dialog.create();
+        // dlgAlert.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        // WindowManager.LayoutParams WMLP =
+        dialog_card.getWindow().setGravity(Gravity.BOTTOM);
+        dialog_card.getWindow().setLayout(ConstraintLayout.LayoutParams.MATCH_PARENT,ConstraintLayout.LayoutParams.WRAP_CONTENT);
+        dialog_card.getWindow().setBackgroundDrawableResource(R.drawable.dialog_rounded);
+        dialog_card.show();
+
+        TextView messageView = (TextView)dialog_card.findViewById(android.R.id.message);
+        messageView.setGravity(Gravity.CENTER);
+
+        Button btnPositive = dialog_card.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button btnNegative = dialog_card.getButton(AlertDialog.BUTTON_NEGATIVE);
+
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) btnPositive.getLayoutParams();
+        layoutParams.weight = 10;
+        btnPositive.setLayoutParams(layoutParams);
+        btnNegative.setLayoutParams(layoutParams);
     }
 }

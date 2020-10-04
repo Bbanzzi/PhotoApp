@@ -2,6 +2,7 @@ package com.example.photoapp.PlanList;
 
 import android.content.Intent;
 import android.media.Image;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,12 +15,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.appcompat.widget.Toolbar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.photoapp.Data.DatabaseReferenceData;
 import com.example.photoapp.Data.GooglePhotoReference;
 import com.example.photoapp.LoginInfoProvider;
+import com.example.photoapp.MainActivity;
 import com.example.photoapp.PlanSchedule.Cell;
 import com.example.photoapp.R;
 
@@ -31,9 +34,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.xml.transform.Result;
+
 public class CreatePlanActivity extends AppCompatActivity{
 
     private static final String TAG="CreatedActivity";
+
+    private static DatabaseReferenceData dbReference;
 
     private static CustomCalendarDialog customCalendarDialog;
     private static Calendar startDates;
@@ -41,27 +48,37 @@ public class CreatePlanActivity extends AppCompatActivity{
     private static List<Calendar> selectedDays;
     private static int index;
     private Map<String,String> albumInfo;
-    private EditText gettitle = null;
     private Toolbar toolbar;
     private ActionBar actionBar;
     private static final int RC_CREATE_PLAN=1005;
     private static int CheckEdit = 0;
+
+    // Dialog를 위한 context -> theme설정
+    private ContextThemeWrapper ctx ;
+
+
+    private TextView startdates;
+    private TextView enddates;
+    private EditText getdest;
+    private EditText getpersonnel;
+    private EditText gettitle = null;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_createplan);
 
         setActionBar_create();
+        ctx = new ContextThemeWrapper(this, R.style.AppTheme);
         Intent intent = getIntent();
         CheckEdit = intent.getExtras().getInt("CheckEdit");
 
-        final DatabaseReferenceData dbReference=(DatabaseReferenceData) getApplication();
+        dbReference=(DatabaseReferenceData) getApplication();
         dbReference.setContext(this);
 
-        TextView startdates=(TextView)findViewById(R.id.textview_startdates);
-        final TextView enddates=(TextView)findViewById(R.id.textview_enddates);
-        EditText getdest=(EditText)findViewById(R.id.edittext_getdest);
-        EditText getpersonnel=(EditText)findViewById(R.id.edittext_getpersonnel);
+        startdates=(TextView)findViewById(R.id.textview_startdates);
+        enddates=(TextView)findViewById(R.id.textview_enddates);
+        getdest=(EditText)findViewById(R.id.edittext_getdest);
+        getpersonnel=(EditText)findViewById(R.id.edittext_getpersonnel);
         ImageButton btn_close = (ImageButton) findViewById(R.id.button_close);
 
         gettitle=(EditText)findViewById(R.id.edittext_gettitle);
@@ -120,50 +137,16 @@ public class CreatePlanActivity extends AppCompatActivity{
             @Override
             public void onClick(View v) {
                 if(CheckEdit == 0) {
-                    getGooglePhotoSharedAlbum();
+                    // 앨범을 처음 만들때 Progress circle을 위한 asynctask
+                    // task안에도 setplan있음
+                    AlbumCreateTask task=new AlbumCreateTask(v);
+                    task.execute();
                     Log.i("TAG","----check is 0----" + CheckEdit);
+                }else{
+                    // 앨범을 수정할때 그냥 수정
+                    setPlan(v);
                 }
 
-
-                if ( gettitle.getText().toString().length()==0) {
-                    Toast.makeText(v.getContext().getApplicationContext(),"제목를 입력해주세요", Toast.LENGTH_SHORT).show();
-                } else if( getdest.getText().toString().length()==0 ){
-                    Toast.makeText(v.getContext().getApplicationContext(), "나라를 입력해주세요", Toast.LENGTH_SHORT).show();
-                } else if( getpersonnel.getText().toString().length()==0 ){
-                    Toast.makeText(v.getContext().getApplicationContext(), "인원를 입력해주세요", Toast.LENGTH_SHORT).show();
-                } else
-                {
-                    try {
-                        //AlbumActivity로 정보를 옮김
-                        String planTitle=gettitle.getText().toString();
-                        String planDest=getdest.getText().toString();
-                        int planPersonnel=Integer.parseInt(getpersonnel.getText().toString());
-                        String selectedDays_str = transCalendarToStr(selectedDays);
-
-                        PlanItem planItem=new PlanItem(planTitle,planDest,planPersonnel,startDates,endDates,selectedDays_str,index+1);
-                        planItem.setAlbumId(albumInfo.get("AlbumId"));
-                        planItem.setAlbumTitle(albumInfo.get("AlbumTitle"));
-                        planItem.setAlbumSharedToken(albumInfo.get("AlbumSharedToken"));
-
-
-                        Map<String, Object> userinfo = new HashMap<>();
-                        userinfo.put("userName", LoginInfoProvider.getUserName(CreatePlanActivity.this));
-                        userinfo.put("userEmail", LoginInfoProvider.getUserEmail(CreatePlanActivity.this));
-                        userinfo.put("userUID", LoginInfoProvider.getUserUID(CreatePlanActivity.this));
-
-                        dbReference.getCreateDbPlansRef().setValue(planItem);
-                        dbReference.getCreateDbPlanUsersRef().setValue(userinfo);
-                        dbReference.getCreateDbUserPlansRef().child(dbReference.getCreateDbPlansRef().getKey()).setValue(planItem);
-
-                        Intent intent = new Intent();
-                        intent.putExtra("planItem", planItem);
-                        setResult(RC_CREATE_PLAN, intent);
-                        finish();
-
-                    } catch(NumberFormatException e){
-                        Toast.makeText(v.getContext().getApplicationContext(), "인원에는 숫자만 입력해 주세요", Toast.LENGTH_SHORT).show();
-                    }
-                }
             }
         });
 
@@ -221,9 +204,38 @@ public class CreatePlanActivity extends AppCompatActivity{
         return daysStrList;
     }
 
-    //Album 고르는 dialog => 중복된 경우 ?
-    //+ 새로만드는 것
-    //+ 한계획에는 한개의 앨범만 shared되게 구분짓기?
+
+    private class AlbumCreateTask extends AsyncTask{
+
+        private CustomProgressCircleDialog dialog;
+        private View v;
+
+        public AlbumCreateTask(View v) {
+            this.v=v;
+        }
+
+        @Override
+        protected Object doInBackground(Object[] objects) {
+            getGooglePhotoSharedAlbum();
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            dialog=new CustomProgressCircleDialog(ctx);
+            dialog.setCancelable(false); // 주변 클릭 터치 시 프로그래서 사라지지 않게 하기
+            dialog.show();
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(Object o) {
+            dialog.dismiss();
+            setPlan(v);
+            super.onPostExecute(o);
+        }
+    }
+
     public void getGooglePhotoSharedAlbum(){
 
         final GooglePhotoReference googlePhotoReference=(GooglePhotoReference) getApplication();
@@ -233,55 +245,47 @@ public class CreatePlanActivity extends AppCompatActivity{
         }else {
             String albumTitle = gettitle.getText().toString();
             Log.i("Tag","----albumtitle---- :"+albumTitle);
-            albumInfo = googlePhotoReference.setAlbumTitle(albumTitle);
+            albumInfo = googlePhotoReference.setAlbumTitle( albumTitle);
         }
+    }
 
-        /*
-        AlertDialog.Builder builderSingle = new AlertDialog.Builder(CreatePlanActivity.this);
-        builderSingle.setTitle("사진들을 저장할 앨범을 새로 만들거나 기존의 앨범을 고르시오");
+    public void setPlan(View v) {
+        if (gettitle.getText().toString().length() == 0) {
+            Toast.makeText(v.getContext().getApplicationContext(), "제목를 입력해주세요", Toast.LENGTH_SHORT).show();
+        } else if (getdest.getText().toString().length() == 0) {
+            Toast.makeText(v.getContext().getApplicationContext(), "나라를 입력해주세요", Toast.LENGTH_SHORT).show();
+        } else if (getpersonnel.getText().toString().length() == 0) {
+            Toast.makeText(v.getContext().getApplicationContext(), "인원를 입력해주세요", Toast.LENGTH_SHORT).show();
+        } else {
+            try {
+                //AlbumActivity로 정보를 옮김
+                String planTitle = gettitle.getText().toString();
+                String planDest = getdest.getText().toString();
+                int planPersonnel = Integer.parseInt(getpersonnel.getText().toString());
+                String selectedDays_str = transCalendarToStr(selectedDays);
 
-        final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(CreatePlanActivity.this, android.R.layout.select_dialog_singlechoice);
-        arrayAdapter.add("새로 만들기");
+                PlanItem planItem = new PlanItem(planTitle, planDest, planPersonnel, startDates, endDates, selectedDays_str, index + 1);
+                planItem.setAlbumId(albumInfo.get("AlbumId"));
+                planItem.setAlbumTitle(albumInfo.get("AlbumTitle"));
+                planItem.setAlbumSharedToken(albumInfo.get("AlbumSharedToken"));
 
-        GooglePhotoProvider googlePhotoProvider=new GooglePhotoProvider(token);
-        final ArrayList<String> albumInfo=googlePhotoProvider.getSharedAlbumInfo();
-        final ArrayList<String> albumIdArrayList=new ArrayList<>();
-        for (int i=0; i<albumInfo.size() ; i++){
-            if(i % 2 ==0) {
-                arrayAdapter.add(albumInfo.get(i));
-            }
-            else {
-                albumIdArrayList.add(albumInfo.get(i));
+
+                Map<String, Object> userinfo = new HashMap<>();
+                userinfo.put("userName", LoginInfoProvider.getUserName(CreatePlanActivity.this));
+                userinfo.put("userEmail", LoginInfoProvider.getUserEmail(CreatePlanActivity.this));
+                userinfo.put("userUID", LoginInfoProvider.getUserUID(CreatePlanActivity.this));
+
+                dbReference.getCreateDbPlansRef().setValue(planItem);
+                dbReference.getCreateDbPlanUsersRef().setValue(userinfo);
+                dbReference.getCreateDbUserPlansRef().child(dbReference.getCreateDbPlansRef().getKey()).setValue(planItem);
+                Intent intent = new Intent();
+                intent.putExtra("planItem", planItem);
+                setResult(RC_CREATE_PLAN, intent);
+                finish();
+
+            } catch (NumberFormatException e) {
+                Toast.makeText(v.getContext().getApplicationContext(), "인원에는 숫자만 입력해 주세요", Toast.LENGTH_SHORT).show();
             }
         }
-
-        builderSingle.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
-
-        builderSingle.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                albumtitle = arrayAdapter.getItem(which);
-                albumId = albumIdArrayList.get(which-1);
-
-                AlertDialog.Builder builderInner = new AlertDialog.Builder(CreatePlanActivity.this);
-                builderInner.setMessage(albumtitle);
-                sharedalbumtitle.setText(albumtitle);
-                builderInner.setTitle("Your Selected Item is");
-                builderInner.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog,int which) {
-                        dialog.dismiss();
-                    }
-                });
-                builderInner.show();
-            }
-        });
-        builderSingle.show();
-        */
     }
 }
