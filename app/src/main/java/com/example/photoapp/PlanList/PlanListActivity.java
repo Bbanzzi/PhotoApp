@@ -1,10 +1,13 @@
 package com.example.photoapp.PlanList;
 
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -18,6 +21,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -40,7 +45,9 @@ import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
 import com.google.photos.library.v1.PhotosLibraryClient;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 //불러오면서 기다리게 만들 장치 필요
@@ -69,10 +76,9 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_planlist);
-
-
+        //권한 설정
+        checkAndRequestPermissions();
         //구글 인증
-        // dynamiclink로 들어왔을때 이것도 미완성
         checkDynamicLink();
         // Firebase database
         dbReference=(DatabaseReferenceData) getApplication();
@@ -106,14 +112,11 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
         // use a linear layout manager
         layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
-
         planItemList=new ArrayList<PlanItem>();
         //Database 에서 plan목록 받아옴
         searchPlanList();
-
         PlanListRecyclerAdatper = new PlanListRecyclerAdatper(this, planItemList,this,this) ;
         recyclerView.setAdapter(PlanListRecyclerAdatper) ;
-
         // 각 아이템 간격 주기
         recyclerView.addItemDecoration(new RecyclerDecoration(this));
 
@@ -122,7 +125,6 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
     // floating button을누른경우
     public void onClick (View view){
         switch (view.getId()) {
-
             case R.id.floatingbtn_createplan :
                 getAlbumTitle();
                 break;
@@ -131,11 +133,9 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
             case R.id.floatingbtn_joinplan :
                 joinPlanItem();
                 break;
-
             case R.id.floatingbtn_setting :
                 getSettingWindow();
                 break;
-
         }
     }
 
@@ -242,11 +242,8 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
     }
 
 
-
     @Override
     public void onItemSelected(View v, int position) {
-        //AlbumRecyclerAdatper.ViewHolder viewHolder = (AlbumRecyclerAdatper.ViewHolder)recyclerView.findViewHolderForAdapterPosition(position);
-
         Intent intent = new Intent(getApplicationContext(), PlanMainActivity.class);
         intent.putExtra("planItem", planItemList.get(position));
         startActivityForResult(intent,RC_PLAN_MAIN);
@@ -254,7 +251,7 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
 
     @Override
     public void onItemLongSelected(View v, int position) {
-        Toast.makeText(this, position + " long clicked", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, position + " long clicked", Toast.LENGTH_SHORT).show();
     }
 
     //firebase my plan search
@@ -422,5 +419,100 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
 
 
     }
+
+    private static final int REQUEST_CODE_AUTH_EXTERNAL_STORAGE=1;
+    private static final int REQUEST_CODE_AUTH_INTERNAL_STORAGE=2001;
+
+    private static final  String[] PERMISSIONS = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        Log.d(TAG, "Permission callback called-------");
+        switch (requestCode) {
+            case REQUEST_CODE_AUTH_EXTERNAL_STORAGE: {
+
+                Map<String, Integer> perms = new HashMap<>();
+                // Initialize the map with both permissions
+                perms.put(Manifest.permission.READ_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
+                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
+                // Fill with actual results from user
+                if (grantResults.length > 0) {
+                    for (int i = 0; i < permissions.length; i++)
+                        perms.put(permissions[i], grantResults[i]);
+                    // Check for both permissions
+                    if (perms.get(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+                            && perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                        Log.d(TAG, "Allow storage services permission granted");
+                        // process the normal flow
+                        //else any one or both the permissions are not granted
+                    } else {
+                        Log.d(TAG, " torage services permission is not granted ");
+                        //permission is denied (this is the first time, when "never ask again" is not checked) so ask again explaining the usage of permission
+//                        // shouldShowRequestPermissionRationale will return true
+                        //show the dialog or snackbar saying its necessary and try again otherwise proceed with setup.
+                        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE) || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                            showDialogOK("이 앱을 사용하기 위해서는 미디어 파일의 접근이 반드시 필요합니다.",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            switch (which) {
+                                                case DialogInterface.BUTTON_POSITIVE:
+                                                    checkAndRequestPermissions();
+                                                    break;
+                                                case DialogInterface.BUTTON_NEGATIVE:
+                                                    finishAffinity();
+                                                    // proceed with logic by disabling the related features or quit the app.
+                                                    break;
+                                            }
+                                        }
+                                    });
+                        }
+                        //permission is denied (and never ask again is  checked)
+                        //shouldShowRequestPermissionRationale will return false
+                        else {
+                            Toast.makeText(this, "Go to settings and enable permissions", Toast.LENGTH_LONG)
+                                    .show();
+                            //                            //proceed with logic by disabling the related features or quit the app.
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    private void showDialogOK(String message, DialogInterface.OnClickListener okListener) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setMessage(message)
+                .setPositiveButton("OK", okListener)
+                .setNegativeButton("Cancel", okListener)
+                .create()
+                .show();
+    }
+
+    private  boolean checkAndRequestPermissions() {
+        int permissionWrite = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int permissionRead = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        List<String> listPermissionsNeeded = new ArrayList<>();
+
+        if (permissionWrite != PackageManager.PERMISSION_GRANTED) {
+            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+        if (permissionRead != PackageManager.PERMISSION_GRANTED) {
+            listPermissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+        if (!listPermissionsNeeded.isEmpty()) {
+
+            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),REQUEST_CODE_AUTH_EXTERNAL_STORAGE);
+            return false;
+        }
+        return true;
+    }
+
+
 
 }
