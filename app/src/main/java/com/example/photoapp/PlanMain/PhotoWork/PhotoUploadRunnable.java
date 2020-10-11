@@ -166,6 +166,7 @@ public class PhotoUploadRunnable implements Runnable {
                         filepaths.add(PathUtils.getPath(this.context, uriImage));
                         //Filename - uuid
                         filename.add( FileName[0] + "-" + uniqueID + "." + FileName[1] );
+                        //0부분이 제목,   1부분이 jpg
                         Log.i(TAG, "photo Time is " + exif.getDateTime() + " Paths " + PathUtils.getPath(this.context, uriImage));
                         count++;
                     }
@@ -191,6 +192,7 @@ public class PhotoUploadRunnable implements Runnable {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void UploadRequest() {
+        Log.i(TAG, "----PhotoUploadRunnable implement----");
         for (String filepath : filepaths) {
             File file_temp = new File(filepath);
             try (RandomAccessFile file = new RandomAccessFile(file_temp, "r")) {

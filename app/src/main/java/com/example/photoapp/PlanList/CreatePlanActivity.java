@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,6 +47,8 @@ public class CreatePlanActivity extends AppCompatActivity{
     private ActionBar actionBar;
     private static final int RC_CREATE_PLAN=1005;
     private static int CheckEdit = 0;
+    private Boolean galleryCheck = false;
+    private Boolean radioCheck;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -131,7 +134,9 @@ public class CreatePlanActivity extends AppCompatActivity{
                     Toast.makeText(v.getContext().getApplicationContext(), "나라를 입력해주세요", Toast.LENGTH_SHORT).show();
                 } else if( getpersonnel.getText().toString().length()==0 ){
                     Toast.makeText(v.getContext().getApplicationContext(), "인원를 입력해주세요", Toast.LENGTH_SHORT).show();
-                } else
+                } else if(!radioCheck){
+                    Toast.makeText(v.getContext().getApplicationContext(), "버튼을 선택해주세요", Toast.LENGTH_SHORT).show();
+                }else
                 {
                     try {
                         //AlbumActivity로 정보를 옮김
@@ -144,6 +149,12 @@ public class CreatePlanActivity extends AppCompatActivity{
                         planItem.setAlbumId(albumInfo.get("AlbumId"));
                         planItem.setAlbumTitle(albumInfo.get("AlbumTitle"));
                         planItem.setAlbumSharedToken(albumInfo.get("AlbumSharedToken"));
+                        int galleryCheck_int=0;
+                        //if구문 수정
+                        if(galleryCheck) {
+                            galleryCheck_int = 1;
+                        }
+                        planItem.setGalleryCheck(galleryCheck_int);
 
 
                         Map<String, Object> userinfo = new HashMap<>();
@@ -283,5 +294,15 @@ public class CreatePlanActivity extends AppCompatActivity{
         });
         builderSingle.show();
         */
+    }
+
+    public void onRadioBtnClicked(View view) {
+        radioCheck = ((RadioButton)view).isChecked();
+        switch (view.getId()){
+            case R.id.radiobtn_auto:
+                galleryCheck = false;
+            case R.id.radiobtn_gallery:
+                galleryCheck = true;
+        }
     }
 }
