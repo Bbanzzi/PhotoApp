@@ -163,17 +163,19 @@
         android:background="#FFF"
         android:src="@drawable/ic_baseline_nation_24"
         tools:ignore="MissingConstraints" />
-
-    <EditText
-        android:id="@+id/edittext_getdest"
-        android:layout_width="fill_parent"
+        
+    <Spinner
+        android:id="@+id/spinner_nation"
+        android:entries="@array/나라"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:gravity="center_vertical"
-        android:layout_marginLeft="18dp"
-        android:hint="나라"
+        android:layout_marginLeft="10dp"
         android:background="@null"
         app:layout_constraintLeft_toRightOf="@+id/textview_dest"
-        tools:textSize="16sp" />
+        tools:textSize="16sp"
+        />
+
     </LinearLayout>
 
     <LinearLayout

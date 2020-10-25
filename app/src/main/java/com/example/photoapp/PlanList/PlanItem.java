@@ -36,6 +36,7 @@ public class PlanItem implements Parcelable {
 
     private String selectedDays;
     private int dayNum;
+    private int pos_nation;
     private int galleryCheck;
 
 
@@ -49,6 +50,7 @@ public class PlanItem implements Parcelable {
         planPersonnel = in.readInt();
         //galleryCheck = in.readBoolean();
         galleryCheck = in.readInt();
+        pos_nation = in.readInt();
         long milliseconds_startDates = in.readLong();
         long milliseconds_endDates = in.readLong();
         timezone_id = in.readString();
@@ -73,6 +75,7 @@ public class PlanItem implements Parcelable {
         this.albumId=albumId;
         this.planPersonnel=planPersonnel;
         this.galleryCheck=galleryCheck;
+        this.pos_nation=pos_nation;
 
         this.startDates=startDates;
         this.endDates=endDates;
@@ -96,6 +99,7 @@ public class PlanItem implements Parcelable {
     public void setAlbumSharedToken(String albumSharedToken) {this.albumSharedToken=albumSharedToken;}
     public void setSelectedDays(String selectedDays) {this.selectedDays=selectedDays;}
     public void setGalleryCheck(int galleryCheck){this.galleryCheck=galleryCheck;}
+    public void setPosNation(int pos_nation){this.pos_nation=pos_nation; }
 
     void setStartDates(Calendar startDates) { this.startDates = startDates; }
     void setEndDates(Calendar endDates) { this.endDates = endDates; }
@@ -119,6 +123,7 @@ public class PlanItem implements Parcelable {
     public String getAlbumSharedToken() {return  this.albumSharedToken;}
     public String getSelectedDays() { return this.selectedDays;}
     public int getGalleryCheck() { return this.galleryCheck; }
+    public int getPosNation() {return this.pos_nation; }
     public int getDayNum(){ return this.dayNum;}
 
     public String getStartDates_str() {
@@ -181,6 +186,7 @@ public class PlanItem implements Parcelable {
         dest.writeString(albumId);
         dest.writeInt(planPersonnel);
         dest.writeInt(galleryCheck);
+        dest.writeInt(pos_nation);
         dest.writeLong(startDates.getTimeInMillis());
         dest.writeLong(endDates.getTimeInMillis());
         dest.writeString(startDates.getTimeZone().getID());

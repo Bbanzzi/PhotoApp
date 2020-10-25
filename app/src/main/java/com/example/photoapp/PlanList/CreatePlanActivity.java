@@ -6,11 +6,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,6 +51,7 @@ public class CreatePlanActivity extends AppCompatActivity{
     private static int CheckEdit = 0;
     private Boolean galleryCheck = false;
     private Boolean radioCheck;
+    private static int pos_nation;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,7 +66,8 @@ public class CreatePlanActivity extends AppCompatActivity{
 
         TextView startdates=(TextView)findViewById(R.id.textview_startdates);
         final TextView enddates=(TextView)findViewById(R.id.textview_enddates);
-        EditText getdest=(EditText)findViewById(R.id.edittext_getdest);
+        Spinner getdest=(Spinner) findViewById(R.id.spinner_nation);
+
         EditText getpersonnel=(EditText)findViewById(R.id.edittext_getpersonnel);
         ImageButton btn_close = (ImageButton) findViewById(R.id.button_close);
 
@@ -76,12 +80,25 @@ public class CreatePlanActivity extends AppCompatActivity{
             String endDates_str = "~ " + planItem_intent.getEndDates_str();
 
             gettitle.setText(planItem_intent.getPlanTitle());
-            getdest.setText( planItem_intent.getPlanDest());
+            getdest.setSelection(planItem_intent.getPosNation());
+            pos_nation = planItem_intent.getPosNation();
             getpersonnel.setText(personNum);
             startdates.setText(planItem_intent.getStartDates_str());
             enddates.setText(endDates_str);
 
         }
+
+        pos_nation = 0;
+        getdest.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                pos_nation = position;
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                Toast.makeText(getApplicationContext(), "나라를 선택해주세요", Toast.LENGTH_SHORT).show();
+            }
+        });
         //달력창
         customCalendarDialog= new CustomCalendarDialog(this);
         customCalendarDialog.setCustomCalendarDialogListener(new CustomCalendarDialog.CustomCalendarDialogListener() {
@@ -130,7 +147,7 @@ public class CreatePlanActivity extends AppCompatActivity{
 
                 if ( gettitle.getText().toString().length()==0) {
                     Toast.makeText(v.getContext().getApplicationContext(),"제목를 입력해주세요", Toast.LENGTH_SHORT).show();
-                } else if( getdest.getText().toString().length()==0 ){
+                } else if( pos_nation== 0){
                     Toast.makeText(v.getContext().getApplicationContext(), "나라를 입력해주세요", Toast.LENGTH_SHORT).show();
                 } else if( getpersonnel.getText().toString().length()==0 ){
                     Toast.makeText(v.getContext().getApplicationContext(), "인원를 입력해주세요", Toast.LENGTH_SHORT).show();
@@ -141,7 +158,7 @@ public class CreatePlanActivity extends AppCompatActivity{
                     try {
                         //AlbumActivity로 정보를 옮김
                         String planTitle=gettitle.getText().toString();
-                        String planDest=getdest.getText().toString();
+                        String planDest=getdest.getItemAtPosition(pos_nation).toString();
                         int planPersonnel=Integer.parseInt(getpersonnel.getText().toString());
                         String selectedDays_str = transCalendarToStr(selectedDays);
 
@@ -155,6 +172,7 @@ public class CreatePlanActivity extends AppCompatActivity{
                             galleryCheck_int = 1;
                         }
                         planItem.setGalleryCheck(galleryCheck_int);
+                        planItem.setPosNation(pos_nation);
 
 
                         Map<String, Object> userinfo = new HashMap<>();
