@@ -1,8 +1,10 @@
-package com.example.photoapp.PlanMain;
+package com.example.photoapp.PlanMain.PlanWork;
 
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
@@ -23,11 +25,14 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
 import com.example.photoapp.PlanMain.Photo.PhotoDownloadRequest;
+import com.example.photoapp.PlanMain.PlanPhotoData;
+import com.example.photoapp.PlanSchedule.RealtimeData;
 import com.example.photoapp.R;
 import com.google.android.material.snackbar.Snackbar;
 import com.rey.material.widget.CheckedImageView;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -52,6 +57,7 @@ public class PlanMainPhotoDownload {
     private static boolean AllEnqueued=false;
     private ConstraintLayout layout;
 
+    // 처음 BroadCast생성을 위한 객체 생성
     public PlanMainPhotoDownload(Context context){
         this.context=context;
         this.downloadManager=(DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
@@ -62,7 +68,6 @@ public class PlanMainPhotoDownload {
         this.downloadList=downloadList;
         this.downloadRequest=downloadRequest;
     }
-
     //Download작업업
    public void downloadPhotos(ConstraintLayout layout){
 
@@ -73,7 +78,6 @@ public class PlanMainPhotoDownload {
             @Override
             public List<Long> get() {
                 downloadIdList= downloadRequest.downloadPhotoList(downloadList);
-                Log.i(TAG, "ASDFASDF");
                 if(downloadIdList.isEmpty()) size=0;
                 else size=downloadIdList.size();
                 AllEnqueued=true;

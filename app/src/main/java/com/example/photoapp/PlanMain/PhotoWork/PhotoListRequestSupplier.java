@@ -27,9 +27,10 @@ import java.util.TimeZone;
 import java.util.function.Supplier;
 
 @RequiresApi(api = Build.VERSION_CODES.N)
-public class PhotoRequestSupplier implements Supplier<List<List<PlanPhotoData>>> {
+public class PhotoListRequestSupplier implements Supplier<List<List<PlanPhotoData>>> {
     @Override
     public List<List<PlanPhotoData>> get() {
+        Log.i(TAG, "ASDFASDFASDf0");
         Log.i(TAG, Thread.currentThread().getName());
         getPhotoUrl(planItem.getAlbumId());
         return filterByDate(planItem.putStartDates(),planItem.getPlanDates());
@@ -42,7 +43,7 @@ public class PhotoRequestSupplier implements Supplier<List<List<PlanPhotoData>>>
     private GooglePhotoReference googlePhotoReference;
     private List<PlanPhotoData> planPhotoDataList= new ArrayList<>();
 
-    public PhotoRequestSupplier(Context context, PlanItem planItem,  GooglePhotoReference googlePhotoReference){
+    public PhotoListRequestSupplier(Context context, PlanItem planItem, GooglePhotoReference googlePhotoReference){
         this.context=context;
         this.planItem=planItem;
         this.googlePhotoReference=googlePhotoReference;
@@ -87,59 +88,14 @@ public class PhotoRequestSupplier implements Supplier<List<List<PlanPhotoData>>>
         startDates.set(Calendar.MINUTE, 0);
         startDates.set(Calendar.SECOND, 0);
         startDates.set(Calendar.MILLISECOND, 0);
-        // 이건 확신 못하겠음;
-        //long startTime = System.nanoTime();
-        // google Photo의 사진 time이 어떤 것을 기준으로 작성되는지 몰름 어떻게 확인하지?
+
         Long nowDatesLong=startDates.getTimeInMillis()/1000;
         for( PlanPhotoData planPhotoData :planPhotoDataList){
             int day_index= (int) ((planPhotoData.getCreationTimeLong()-nowDatesLong) / oneDaysSecond);
             photos.get(day_index).add(planPhotoData);
-            Log.i(TAG, "Time difference" + (planPhotoData.getCreationTimeLong()-nowDatesLong));
         }
-        //long endTime = System.nanoTime();
-        //long duration = endTime - startTime;
-        //System.out.println("Second run: "+duration);
         return photos;
 
-
-        // 20.08.31 문제점
-        /*
-        사진이 시간순대로 알아서 들어간다. 따라서 내가 굳이 뭐하지 않아도 알아서 시간순대로 request댐
-        but, 내가 position을 바꾸면 위치가 바뀌어서 순서가 바뀐다. 그럼 밑의 순서대로 넣는 거는 그 사진을 제외하고 넣게 됌
-         */
-        /*
-        Long nowDatesLong=startDates.getTimeInMillis()/1000;
-        Long nextDatesLong=nowDatesLong + oneDaysSecond;
-        Log.i(TAG, String.valueOf(startDates.getTimeInMillis()) + String.valueOf(nextDatesLong));
-
-        //시간 순서대로 읽어올 때만 적용됌
-        int index=0;
-        for(int i=0; i<planPhotoDataList.size() ; i++){
-            PlanPhotoData planPhotoData=planPhotoDataList.get(i);
-            Long photoTime=planPhotoData.getCreationTimeLong();
-            if ( nowDatesLong.compareTo(photoTime) <=0 && nextDatesLong.compareTo(photoTime) > 0 ){
-                Log.i(TAG, "days is : " + photoTime );
-                test.get(index).add(planPhotoData);
-            }else if(nowDatesLong.compareTo(photoTime) >0){
-                // 전의 사진은 그냥 넘어감
-            }
-            else{
-                // 처음 다음날의 사진
-                index++;
-                i--;
-                Log.i(TAG, "days is : " + index );
-                nowDatesLong +=oneDaysSecond;
-                nextDatesLong += oneDaysSecond;
-            }
-            // days를 넘어가면 종료
-            if(index == days ){
-
-                break;
-            }
-        }
-        return test;
-
-         */
 
 
     }

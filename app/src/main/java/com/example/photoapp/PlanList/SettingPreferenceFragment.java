@@ -24,6 +24,7 @@ import com.example.photoapp.PlanMain.PlanMainActivity;
 import com.example.photoapp.R;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
@@ -38,7 +39,7 @@ public class SettingPreferenceFragment extends PreferenceFragment implements Sha
     Preference profile;
     Preference logout;
 
-    private GoogleApiClient mGoogleApiClient;
+    private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
     //Activity NetWorkActivity;
 
@@ -48,9 +49,6 @@ public class SettingPreferenceFragment extends PreferenceFragment implements Sha
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.setting);
 
-        GoogleSignInOptions googleSignInOptions = MainActivity.gso;
-        mGoogleApiClient = new GoogleApiClient.Builder(getContext())
-                .addApi(Auth.GOOGLE_SIGN_IN_API,googleSignInOptions).build();
         mAuth = FirebaseAuth.getInstance();
 
         prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());//this 대신 getActivity()를 씀?
@@ -61,16 +59,6 @@ public class SettingPreferenceFragment extends PreferenceFragment implements Sha
         logout = (Preference) findPreference("logout");
         String email = LoginInfoProvider.getUserEmail(getContext());
         profile.setSummary(email);
-
-
-        if (prefs.getBoolean("messageNotice", false)) {
-            message.setSummary("사진 업로드 시 알림을 받습니다");
-            PlanMainActivity.messageCheck = true;
-        }
-        if (prefs.getBoolean("useOnlyWIFI", false)) {
-            useOnlyWIFI.setSummary("데이터 사용");
-            PlanMainActivity.downLoadOnlyWIFI = false;
-        }
 
         logout.setOnPreferenceClickListener(preference -> {
             new AlertDialog.Builder(getContext()).setTitle("로그아웃").setMessage("로그아웃 하시겠습니까?")
@@ -98,28 +86,7 @@ public class SettingPreferenceFragment extends PreferenceFragment implements Sha
 
     public void signOut(){
         LoginInfoProvider.clearUserData(getContext());
-        mGoogleApiClient.connect();
-        mGoogleApiClient.registerConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-            @Override
-            public void onConnected(@Nullable Bundle bundle) {
-                mAuth.signOut();
-                if(mGoogleApiClient.isConnected()){
-                    Auth.GoogleSignInApi.signOut(mGoogleApiClient).setResultCallback(new ResultCallback<Status>() {
-                        @Override
-                        public void onResult(@NonNull Status status) {
-                            if(status.isSuccess()){
-                                Toast.makeText(getContext(),"로그아웃",Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onConnectionSuspended(int i) {
-                Toast.makeText(getContext(),"로그아웃 실패",Toast.LENGTH_SHORT).show();
-            }
-        });
+        mAuth.signOut();
     }
 
     @Override
@@ -148,25 +115,22 @@ public class SettingPreferenceFragment extends PreferenceFragment implements Sha
         if (key.equals("messageNotice")) {
             if (prefs.getBoolean("messageNotice", false)) {
                 message.setSummary("메시지 알림 허용");
-                PlanMainActivity.messageCheck = true;
+                prefs.edit().putBoolean("messageNotice", true).apply();
             } else {
                 message.setSummary("사진 업로드 시 알림을 받습니다");
-                PlanMainActivity.messageCheck = false;
+                prefs.edit().putBoolean("messageNotice", false).apply();
             }
         }
 
         if (key.equals("useOnlyWIFI")) {
             if (prefs.getBoolean("useOnlyWIFI", false)) {
                 useOnlyWIFI.setSummary("데이터 사용");
-                PlanMainActivity.downLoadOnlyWIFI = false;
+                prefs.edit().putBoolean("useOnlyWIFI", true).apply();
             } else {
                 useOnlyWIFI.setSummary("WIFI가 연결되어있지 않을 때 데이터를 이용해 사진 업로드 합니다");
-                PlanMainActivity.downLoadOnlyWIFI = true;
-
+                prefs.edit().putBoolean("useOnlyWIFI", false).apply();
             }
 
-            PlanMainActivity.refreshDisplay = true;
-            //((BaseAdapter)getPreferenceScreen().getRootAdapter()).notifyDataSetChanged();
         }
 
     }

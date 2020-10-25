@@ -42,12 +42,6 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
     private static int imageWidthPixels;
 
-    public static String place_val = null;
-    public static String memo_val = null;
-    public static String time_val = null;
-
-
-
     // 생성자에서 데이터 리스트 객체를 전달받음.
     PlanPlaceRecyclerAdapter(Context context, List<PlanPhotoData> list,
                              OnPhotoItemSelectedInterface photoListener
@@ -60,7 +54,6 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
         this.placeListener=placeListener;
 
         imageWidthPixels = context.getResources().getDisplayMetrics().widthPixels / 4;
-
     }
 
 
@@ -84,7 +77,7 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-
+        Log.i(TAG, "bindviewhodler");
         if(list.get(position).getPlace()!=null) {
             PlaceViewHolder placeViewHolder = (PlaceViewHolder) holder;
             placeViewHolder.name.setText(list.get(position).getPlace());
@@ -98,6 +91,7 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
     @Override
     public int getItemViewType(int position) {
+        Log.i(TAG, "getItemViewType");
         if(list.get(position).getPlace() !=null ) {
             return VIEWTYPE_PLACE;
         }else if(list.get(position).getId() !=null){
@@ -110,11 +104,14 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
     @Override
     public int getItemCount() {
-        return list.size();
-    }
+        Log.i(TAG, "getItemCount");
+        Log.i(TAG, String.valueOf(list.size()));
+        return list.size(); }
 
     @Override
     public long getItemId(int position) {
+        Log.i(TAG, "getItemId");
+        Log.i(TAG, String.valueOf(position));
         return position;
     }
 
@@ -127,6 +124,7 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
         public PlaceViewHolder (View itemView) {
             super(itemView);
+            Log.i(TAG, " PlaceViewHolder" );
             name = (TextView)itemView.findViewById(R.id.textview_planplace);
             time = (TextView)itemView.findViewById(R.id.textview_plantime);
             lin_place_time = (LinearLayout) itemView.findViewById(R.id.lin_place_time);
@@ -139,8 +137,6 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
                     Log.i("TAG","----clickItemPos2---- : " + list.get(getAdapterPosition()).getTime_i());
                 }
             });
-
-
         }
     }
 
@@ -151,13 +147,13 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
         public PhotoViewHolder(View itemView) {
             super(itemView);
+            Log.i(TAG, " PhotoViewHolde" );
             imageView = (ImageView) itemView.findViewById(R.id.imageview_photo);
             checkBox = (CheckBox) itemView.findViewById(R.id.checkbox_photo);
 
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Log.i(TAG, "On Click");
                     photoListener.onPhotoItemSelected(v,checkBoxState,getAdapterPosition());
                 }
             });
@@ -178,6 +174,7 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
 
         public void bind(final int position) {
 
+            Log.i(TAG, "bind");
             PlanPhotoData planPhotoData=list.get(position);
 
             RequestOptions cropOptions = new RequestOptions().override(imageWidthPixels)
@@ -214,8 +211,6 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
         }
     }
 
-
-    //클릭 처리 plan을 눌렀을 때https://thepassion.tistory.com/300
     public interface OnPhotoItemSelectedInterface {
         void onPhotoItemSelected(View v, Boolean checkState, int position);
     }
@@ -234,9 +229,24 @@ public class PlanPlaceRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.
     public void setCheckBoxState(Boolean checkBoxState2){
         checkBoxState=checkBoxState2;
     }
+
     public void resetCheckBox(){
         for(PlanPhotoData planPhotoData: list) {
             planPhotoData.setCheck(false);
         }
+    }
+
+    public void update( ArrayList<PlanPhotoData> items){
+        //list.clear();
+//        this.list = itemList;
+//        list.addAll(itemList);
+//        notifyItemInserted(list.size());
+//        notifyDataSetChanged();
+        //this.list.addAll(items);
+//        notifyItemInserted(list.size());
+        Log.i(TAG, String.valueOf(items.size()));
+        Log.i(TAG,String.valueOf(list.size()));
+        notifyDataSetChanged();
+        Log.i(TAG,"ASDF");
     }
 }

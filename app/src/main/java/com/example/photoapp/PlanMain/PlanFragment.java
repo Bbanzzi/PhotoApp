@@ -31,7 +31,6 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
 
     private RecyclerView recyclerView;
     private PlanPlaceRecyclerAdapter sectionAdapter;
-    PlanMainActivity planMainActivity;
 
     private String title;
     private static String TAG =" Fragment";
@@ -50,7 +49,6 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
 
         PlanFragment fragment = new PlanFragment();
         fragment.setArguments(bundle);
-        Log.i(TAG,title);
         return  fragment;
     }
 
@@ -110,21 +108,17 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
     }
 
     public void update(ArrayList<RealtimeData> items){
-        /*
-        planSchedule.clear();
-        planSchedule.addAll(items);
 
-         */
         this.items.clear();
-        for(RealtimeData realTimeData:planSchedule){
+        for(RealtimeData realTimeData: items){
             this.items.add(new PlanPhotoData(realTimeData.getPlace(),realTimeData.getTimeStr(),realTimeData.getMemo(),realTimeData.getTime()));
             if(realTimeData.getPhotoDataList() !=null){
                 this.items.addAll(realTimeData.getPhotoDataList());
             }
         }
-        sectionAdapter.notifyDataSetChanged();
-
-
+        Log.i(TAG, String.valueOf(this.items.size()));
+        sectionAdapter.update(this.items);
+        Log.i(TAG, "ASDF");
     }
 
     @Override

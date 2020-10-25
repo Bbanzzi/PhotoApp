@@ -38,7 +38,6 @@ public class EditPlanScheduleChange extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_plan_schedule_change);
 
-        PlanMainActivity.FIRST_READ_MAIN = false;
         setActionBar();
 
         hour_editPlan2 = (EditText) findViewById(R.id.hour_editPlan2);

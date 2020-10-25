@@ -1,22 +1,13 @@
 package com.example.photoapp.PlanMain;
 
 import android.app.AlertDialog;
-import android.app.DownloadManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -40,9 +31,12 @@ import com.example.photoapp.Data.GooglePhotoReference;
 import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanMain.Photo.PhotoDownloadRequest;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoDeleteRequest;
-import com.example.photoapp.PlanMain.PhotoWork.PhotoRequestSupplier;
-import com.example.photoapp.PlanMain.PhotoWork.PhotoSortRequest;
-import com.example.photoapp.PlanMain.PhotoWork.PhotoUploadRunnable;
+import com.example.photoapp.PlanMain.PlanWork.PlanDynamicLink;
+import com.example.photoapp.PlanMain.PlanWork.PlanMainPhotoDelete;
+import com.example.photoapp.PlanMain.PlanWork.PlanMainPhotoDownload;
+import com.example.photoapp.PlanMain.PlanWork.PlanMainConnection;
+import com.example.photoapp.PlanMain.PlanWork.PlanMainPhotoListing;
+import com.example.photoapp.PlanMain.PlanWork.PlanMainSchedule;
 import com.example.photoapp.PlanSchedule.EditPlanScheduleActivity;
 import com.example.photoapp.PlanSchedule.EditPlanScheduleChange;
 import com.example.photoapp.PlanSchedule.PlanScheduleActivity;
@@ -54,9 +48,6 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.dynamiclinks.DynamicLink;
-import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.ShortDynamicLink;
 
 import java.text.Collator;
@@ -68,9 +59,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 
-public class PlanMainActivity extends AppCompatActivity implements View.OnClickListener {
+public class PlanMainActivity extends AppCompatActivity implements View.OnClickListener, PlanMainSchedule.OnScheduleReadInterface, PlanMainPhotoListing.OnListingInterface{
 
     private static final String TAG = "PlanMainActivity";
 
@@ -82,6 +72,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private String selectDays;
 
     private ArrayList< ArrayList<RealtimeData> > realTimeDataArrayList=new ArrayList<>();
+    private List<List<PlanPhotoData>> planPhotoArrayList;
     private List<Map<String, Long>> trashPhotos=new ArrayList<>();
 
     public static final int RC_PLAN_MAIN=1007;
@@ -89,23 +80,12 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private static DatabaseReferenceData dbReference_2;
     private static DatabaseReference dbDataReference_2;
 
-    public static final String WIFI = "Wi-Fi";
-    public static final String ANY = "Any";
-    public static boolean wifiConnected = false;
-    public static boolean mobileConnected = false;
-    public static boolean refreshDisplay = true;
-    public static boolean downLoadOnlyWIFI = true;
-    public static boolean messageCheck = false;
     public static int day_check = 0;
     public static int time_check;
 
-    public static String sPref = null;
-
-    private NetworkReceiver receiver = new NetworkReceiver();
 
     NotificationManager notificationManager;
     NotificationCompat.Builder builder;
-    Toolbar toolbar;
 
     private ImageButton btn_back_inPlanMain;
     private ImageButton  planschedulebtn;
@@ -119,8 +99,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private static boolean MyDeletion=false;   // 내가 사진을 지운 경우 firebase에서 다시 읽어오는 것보다 바로 삭제하기
     private static boolean AllListingPhotos=false; // 모든 사진을 처음 다 정렬함
 
-    public static boolean FIRST_READ_MAIN = true;
-    public static boolean NOW_READ_MAIN = true;
     public static boolean CHECK_EDIT_MAIN = false;
     public static boolean CHECK_DEL_MAIN = false;
     public static boolean CHECK_CHA_MAIN = false;
@@ -132,36 +110,21 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private ConstraintLayout mainlayout;
     //Download 작업을 위한 Class 객체
     private PlanMainPhotoDownload planMainPhotoDownload;
-
-    OnGetDataListener onGetDataListener_Main = new OnGetDataListener() {
-        @Override
-        public void onStart() {
-
-        }
-
-        @Override
-        public void onSuccess() {
-            ReadDbSchedule=true;
-            adapter.notifyDataSetChanged(); // pagerstate의 getitemposition이 실행됨
-            Log.i("TAG","----adapter.onSuccess----");
-        }
-
-        @Override
-        public void onFailed(DatabaseError databaseError) {
-
-        }
-    };
+    //Schedule Dbread를 위한 class 객체
+    private PlanMainSchedule planMainSchedule;
+    //Photo Listingd을 위한 class + network receiver
+    private PlanMainConnection planMainConnection;
+    //Photo Listing
+    private PlanMainPhotoListing planMainPhotoListing;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_planmain);
+        // SnackBar를 위한 layout
         mainlayout =(ConstraintLayout) findViewById(R.id.constraintlayout_planmain);
 
         saveInstanceState_re = savedInstanceState;
-
-        //onCreate와 onStart 둘다 하는데 충돌이 없을까?
-        updateConnectedFlags();
 
         Intent intent = getIntent();
         planItem = intent.getParcelableExtra("planItem");
@@ -201,15 +164,59 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             trashPhotos.add(empty);
         }
 
+        // 화면 생성
+        setActionBar();
+        viewPager = (ViewPager) findViewById(R.id.viewPager);
 
-        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-        receiver = new NetworkReceiver();
-        this.registerReceiver(receiver, filter);
+        adapter = new PlanPagerAdapter(getSupportFragmentManager(),planItem, realTimeDataArrayList, 1);
+        adapter.setDays(days);
+        //뷰 페이저
+        viewPager.setOffscreenPageLimit(5);
+        viewPager.setAdapter(adapter);
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                spinner.setSelection(position);
+                day_check = position;
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+            }
+        });
+
 
         //다운로드 BroadcastReceiver
         planMainPhotoDownload=new PlanMainPhotoDownload(this);
         planMainPhotoDownload.registerDownloadManagerReceiver();
 
+        //PlanSchedule Listener
+        planMainSchedule=new PlanMainSchedule(dbReference.getDbPlanScheduleRef().child(planItem.getKey()), realTimeDataArrayList, this);
+        //Listing 작업
+        planMainPhotoListing=new PlanMainPhotoListing(this, planItem,
+                dbReference, (GooglePhotoReference)getApplication(),this);
+
+        //PhotoConnection check
+        planMainConnection=new PlanMainConnection(this, new PlanMainConnection.OnConnectionListenerInterface() {
+            @Override
+            public void onConnected() {
+                try {
+                    planMainPhotoListing.listingAllImage();
+                } catch (ExecutionException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailed(boolean Wifi, boolean data, boolean downloadOnlyWIFI) {
+                Log.i(TAG, "Wifi " + Wifi + "Data" + data + "My setting :" + downloadOnlyWIFI);
+            }
+        });
+        planMainConnection.registerNetworkReceiver();
     }
 
 
@@ -218,8 +225,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         super.onPause();
 
         Log.i(TAG, "----onPause main----");
-        FIRST_READ_MAIN = false;
-        NOW_READ_MAIN = false;
     }
 
 
@@ -227,15 +232,13 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "----onDestroy main----");
-        FIRST_READ_MAIN = true;
-        //listener 제거하기기
 
-       if (receiver != null) {
-            this.unregisterReceiver(receiver);
-        }
-
+        //다운로드 BroadcastReceiver unregister
         planMainPhotoDownload.unregisterDownloadManagerReceiver();
-
+        //PlanSchedule Listener unregister
+        //planMainSchedule.unregisterReadChildEventListener();
+        //PhotoConnection
+        planMainConnection.unregisterNetworkReceiver();
     }
 
     @Override
@@ -248,114 +251,41 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     @Override
     public void onStart () {
         super.onStart();
-        NOW_READ_MAIN = true;
         //listener 제거?
-        readPlanSchedule(planItem.getKey());
-        /*
-        readPlanSchedule(planItem.getKey(), new OnGetDataListener() {
-            @Override
-            public void onStart() { }
-
-            @Override
-            public void onSuccess() {
-                // 읽어왔을때 작업할 것
-                ReadDbSchedule=true;
-                adapter.notifyDataSetChanged(); // pagerstate의 getitemposition이 실행됨
-                Log.i("TAG","----adapter.onSuccess----");
-            }
-
-            @Override
-            public void onFailed(DatabaseError databaseError) { }
-        });
-
-         */
-
-        readTrashPhotos(new OnTrashDataListener() {
-            @Override
-            public void onSuccess() {
-                //맨 처음 trashphoto 읽지 않을때 or 내가 삭제한것이 아닐때
-                if ( ReadDBDeletionFirst & !MyDeletion ){
-                    CompletableFuture.runAsync(new Runnable() {
-                        @Override
-                        public void run() {
-                            while(!AllListingPhotos){
-                                try {
-                                    Thread.sleep(500);
-                                    Log.i(TAG, "Others is waited");
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            PhotoDeleteRequest.deleteOtherRequest(planItem, realTimeDataArrayList, trashPhotos);
-                            Log.i(TAG, "Others is deleted");
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    adapter.notifyDataSetChanged();
-                                }
-                            });
-
-                        }
-                    });
-                }else{
-                    // 1. 처음 삭제하는 경우
-                    // 2. 내가 삭제하는 경우
-                    // 3. 내가 sorting or deletion중에 누군가가 삭제를 하는경우 => 일단 보류류
-                    MyDeletion=false;
-                }
-
-            }
-            @Override
-            public void onFailed(DatabaseError databaseError) {
-
-            }
-        });
-        if(FIRST_READ_MAIN) {
-            setActionBar();
-            viewPager = (ViewPager) findViewById(R.id.viewPager);
-
-            adapter = new PlanPagerAdapter(getSupportFragmentManager(),planItem, realTimeDataArrayList, 1);
-            adapter.setDays(days);
-            //뷰 페이저
-            viewPager.setOffscreenPageLimit(5);
-            viewPager.setAdapter(adapter);
-            viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-                @Override
-                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                }
-
-                @Override
-                public void onPageSelected(int position) {
-                    spinner.setSelection(position);
-                    day_check = position;
-                }
-
-                @Override
-                public void onPageScrollStateChanged(int state) {
-                }
-            });
-        }
-
-
-
-        Log.i(TAG, "----onStart main----" + FIRST_READ_MAIN);
-        // Gets the user's network preference settings
-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        sPref = sharedPrefs.getString("listPref", "Wi-Fi");
-
-        updateConnectedFlags();
-
-        /*
-        if(PlanScheduleActivity.CHECK_ACCESS_PLANSCH){
-            DAY_CHECK_firebase = 1;
-            Log.i("TAG", "----onRestart Main----");
-            PlanScheduleActivity.CHECK_ACCESS_PLANSCH = false;
-            onRestart();
-        }
-
-         */
+        planMainSchedule.registerReadValueEventListener();
     }
 
+
+    @Override
+    public void onDataAdded() {
+        adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onListed(List<List<PlanPhotoData>> lists, List<Map<String, Long>> trashPhotos) {
+        planMainPhotoListing.sortingAllImage(realTimeDataArrayList, lists);
+    }
+
+    @Override
+    public void onSorted() {
+        Log.i(TAG, String.valueOf(realTimeDataArrayList.get(2).get(0).getPhotoDataList().size()));
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                adapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    @Override
+    public void onUpdated() {
+
+    }
+
+    @Override
+    public void onFailed() {
+
+    }
 
     @Override
     public void onClick(View view) {
@@ -364,20 +294,38 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             case R.id.btn_back_inPlanMain:
                 onBackPressed();
                 break;
+
             case R.id.btn_menu:
                 Intent intent = new Intent( getApplicationContext(), PlanScheduleActivity.class);
                 intent.putExtra("planItem",planItem);
                 startActivityForResult(intent,RC_PLAN_MAIN);
                 break;
+
             case R.id.btn_inviteplanitem:
-                invitePlanItem();
+                if(planItem.getDynamicLink()!=null){
+                    Log.i(TAG,"Dynamic link : " + planItem.getDynamicLink());
+                }else{
+                    Task<ShortDynamicLink> task= PlanDynamicLink.createDynamicLink(planItem);
+                    task.addOnCompleteListener(new OnCompleteListener<ShortDynamicLink>() {
+                        @Override
+                        public void onComplete(@NonNull Task<ShortDynamicLink> task) {
+                            Map<String, Object> link=new HashMap<>();
+                            link.put("dynamicLink", planItem.getDynamicLink());
+                            dbReference.getDbPlansRef().child(planItem.getKey()).updateChildren(link);
+                            dbReference.getDbUserPlansRef().child(planItem.getKey()).updateChildren(link);
+                        }
+                    });
+                }
                 break;
+
             case R.id.btn_deletephoto:
                 deleteSelectedPhoto();
                 break;
+
             case R.id.btn_downloadphoto:
                 downloadSelectedPhoto();
                 break;
+
             case R.id.btn_photoselectmenu:
                 Log.i(TAG, "not 구현");
                 break;
@@ -385,51 +333,10 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     }
 
 
-    // Checks the network connection and sets the wifiConnected and mobileConnected
-    // variables accordingly.
-    public void updateConnectedFlags() {
-        ConnectivityManager connMgr = (ConnectivityManager)
-                getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
-        if (activeInfo != null && activeInfo.isConnected()) {
-            wifiConnected = activeInfo.getType() == ConnectivityManager.TYPE_WIFI;
-            mobileConnected = activeInfo.getType() == ConnectivityManager.TYPE_MOBILE;
-        } else {
-            wifiConnected = false;
-            mobileConnected = false;
-        }
-
-    }
-
-    // Uses AsyncTask subclass to download the XML feed from stackoverflow.com.
-    public void loadPage() {
-
-        if ( downLoadOnlyWIFI && wifiConnected
-                || ( !downLoadOnlyWIFI && (wifiConnected || mobileConnected ))) {
-            // AsyncTask subclass
-            //new DownloadXmlTask().execute(URL);
-            try {
-                listingAllImage();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-
-        } else {
-            Log.e("TAG","----loadPage() error in PlanMainActivity.class----");
-        }
-
-    }
-
-
-
-
     //customActionBar
     private void setActionBar() {
-        toolbar = findViewById(R.id.toolbar_planMain);
+
+        Toolbar toolbar = findViewById(R.id.toolbar_planMain);
         toolbar.setContentInsetsAbsolute(0,0);
         setSupportActionBar(toolbar);
 
@@ -469,218 +376,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             }
         });
 
-    }
-    // 아직 kakaotalk으로 공유 + 복사하는것 만들어야함
-    public void invitePlanItem(){
-        /*
-        String url="https://www.example.com/?shared_token="+planItem.getAlbumSharedToken();
-        Uri baseUrl = Uri.parse(url);
-        final DynamicLink dynamicLink = FirebaseDynamicLinks.getInstance().createDynamicLink()
-                //?
-                .setLink(baseUrl)
-                .setDomainUriPrefix("https://photoapp.page.link")
-                // Open links with this app on Android
-                .setAndroidParameters(new DynamicLink.AndroidParameters.Builder().build())
-                // Open links with com.example.ios on iOS
-                //.setIosParameters(new DynamicLink.IosParameters.Builder("com.example.ios").build())
-                .buildDynamicLink();
-
-        Uri dynamicLinkUri = dynamicLink.getUri();
-        Log.i(TAG,"Dynamic link : " +  dynamicLinkUri);
-         */
-        //Dynamic Link를 한번이라도 생성했으면 받아오고 아니면 새로 만들어서 저장
-        //밑의 dbPlanReference는 지금 해당되는 plan에 대한 path로 새로 만듬
-        if(planItem.getDynamicLink()!=null){
-            Log.i(TAG,"Dynamic link : " + planItem.getDynamicLink());
-        }else{
-            createDynamicLink();
-        }
-    }
-
-    public void createDynamicLink(){
-        // 비밀번호 대용으로 이용
-        String url="https://www.example.com/?planKey="+planItem.getKey();
-        Uri baseUrl = Uri.parse(url);
-        Task<ShortDynamicLink> shortLinkTask = FirebaseDynamicLinks.getInstance().createDynamicLink()
-                .setLink(baseUrl)
-                .setDomainUriPrefix("https://prototypephotoapp.page.link")
-
-                .setAndroidParameters(new DynamicLink.AndroidParameters.Builder().build())
-                // Set parameters
-                // ...
-                .buildShortDynamicLink() //ShortDynamicLink.Suffix.SHORT 안에 넣어서 길이 조절가능
-                .addOnCompleteListener(this, new OnCompleteListener<ShortDynamicLink>() {
-                    @Override
-                    public void onComplete(@NonNull Task<ShortDynamicLink> task) {
-                        if (task.isSuccessful()) {
-                            // Short link created
-                            Uri shortLink = task.getResult().getShortLink();
-                            Uri flowchartLink = task.getResult().getPreviewLink();
-                            Map<String, Object> link=new HashMap<>();
-                            link.put("dynamicLink",shortLink.toString());
-
-                            dbReference.getDbPlansRef().child(planItem.getKey()).updateChildren(link);
-                            dbReference.getDbUserPlansRef().child(planItem.getKey()).updateChildren(link);
-
-                            planItem.setDynamicLink(shortLink.toString());
-                        } else {
-                            Log.e(TAG,"ERRER : Dynamic link faile");
-                            // Error
-                            // ...
-                        }
-                    }
-                });
-
-    }
-
-    // data 읽어오는 비동기화 작업
-    public void readPlanSchedule(String child) {
-        onGetDataListener_Main.onStart();
-
-        /*
-            realTimeDataArrayList.clear();
-            Log.i(TAG, "----readPlanSchedule realTimeArray Clear----");
-            for (int i = 0; i < days; i++) {
-                ArrayList<RealtimeData> EmptyRealTimeData = new ArrayList<RealtimeData>();
-                EmptyRealTimeData.add(new RealtimeData());
-                realTimeDataArrayList.add(EmptyRealTimeData);
-            }
-
-         */
-
-        Log.i(TAG, "----readPlanSchedule----");
-        dbReference.getDbPlanScheduleRef().child(child).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if(!snapshot.exists()){
-                    ReadDbSchedule=true;
-                }
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
-        dbReference.getDbPlanScheduleRef().child(child).//orderByChild("time").
-        addChildEventListener(new ChildEventListener() {
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String previousChildName) {
-
-                int inDex = Character.getNumericValue(dataSnapshot.getKey().charAt(0));
-                Log.i(TAG, "----onChildChanged---- : " + dataSnapshot.getKey() + "  " + inDex);
-
-                Log.i(TAG, "----Enter onChildChanged else---- : ");
-                ArrayList<RealtimeData> addRealTimeData = new ArrayList<>();
-                addRealTimeData.add(new RealtimeData());
-                for(DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    RealtimeData realtimeData = snapshot.getValue(RealtimeData.class);
-                    addRealTimeData.add(realtimeData);
-                }
-                realTimeDataArrayList.get(inDex-1).clear();
-                realTimeDataArrayList.get(inDex-1).addAll(addRealTimeData);
-                onGetDataListener_Main.onSuccess();
-
-                /*
-                if(CHECK_DEL_MAIN || CHECK_CHA_MAIN || CHECK_EDIT_MAIN ) {
-                    Log.i(TAG,"----onChildChanged first loop check---- ");
-                    if (CHECK_DEL_MAIN || CHECK_CHA_MAIN) {
-                        Log.i(TAG, "----onChildChanged 1 Enter----" + CHECK_DEL_MAIN + " : " + CHECK_CHA_MAIN);
-                        int i = 0;
-                        for (RealtimeData searchData : realTimeDataArrayList.get(day_check)) {
-                            if (searchData.getTime() == time_check) {
-                                realTimeDataArrayList.get(day_check).remove(i);
-                                if (CHECK_DEL_MAIN) {
-                                    onGetDataListener_Main.onSuccess();
-                                }
-                                CHECK_DEL_MAIN = false;
-                                break;
-                            }
-                            i++;
-                        }
-                    }
-                    if (dataSnapshot.exists() && (CHECK_EDIT_MAIN || CHECK_CHA_MAIN)) {
-                        Log.i(TAG, "----onChildChanged 2 Enter----" + CHECK_EDIT_MAIN + " : " + CHECK_CHA_MAIN);
-                        int i = 1;
-                        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                            RealtimeData realtimeData = snapshot.getValue(RealtimeData.class);
-                            try {
-                                if (Integer.parseInt(snapshot.getKey()) != realTimeDataArrayList.get(inDex - 1).get(i).getTime()) {
-                                    realTimeDataArrayList.get(inDex - 1).add(i, realtimeData);
-                                    onGetDataListener_Main.onSuccess();
-                                    CHECK_EDIT_MAIN = false;
-                                    CHECK_CHA_MAIN = false;
-                                    break;
-                                }
-                            } catch (IndexOutOfBoundsException e) {
-                                CHECK_EDIT_MAIN = false;
-                                CHECK_CHA_MAIN = false;
-                                realTimeDataArrayList.get(inDex - 1).add(realtimeData);
-                                Log.i(TAG, "----outofboundException1---- : ");
-                                onGetDataListener_Main.onSuccess();
-                            }
-
-                            i++;
-                        }
-
-                    }
-                }else{
-                    Log.i(TAG, "----Enter onChildChanged else---- : ");
-                    ArrayList<RealtimeData> addRealTimeData = new ArrayList<>();
-                    addRealTimeData.add(new RealtimeData());
-                    for(DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                        RealtimeData realtimeData = snapshot.getValue(RealtimeData.class);
-                        addRealTimeData.add(realtimeData);
-                    }
-                    realTimeDataArrayList.get(inDex-1).clear();
-                    realTimeDataArrayList.get(inDex-1).addAll(addRealTimeData);
-                    onGetDataListener_Main.onSuccess();
-                }
-
-                 */
-            }
-            @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName){
-                Log.i(TAG, "----onChildAdded---- : " + snapshot.getKey() );
-                String index_check = snapshot.getKey();
-                int DAY_CHECK_FIRE = Character.getNumericValue(index_check.charAt(0));
-                if(snapshot.exists() && (FIRST_READ_MAIN )) {
-                    int i = 1;
-                    for (DataSnapshot snapshot1 : snapshot.getChildren()) {
-                        RealtimeData realtimeData1 = snapshot1.getValue(RealtimeData.class);
-                        realTimeDataArrayList.get(DAY_CHECK_FIRE-1).add(realtimeData1);
-                        Log.i(TAG, "----check snapshot1 enter---- : " + realTimeDataArrayList.get(DAY_CHECK_FIRE-1).get(i).getPlace() );
-                        i++;
-                       }
-                    onGetDataListener_Main.onSuccess();
-                }else{
-                    if(realTimeDataArrayList.get(DAY_CHECK_FIRE-1).size() == 1){
-                        for (DataSnapshot snapshot1 : snapshot.getChildren()) {
-                            RealtimeData realtimeData1 = snapshot1.getValue(RealtimeData.class);
-                            realTimeDataArrayList.get(DAY_CHECK_FIRE - 1).add(realtimeData1);
-                            Log.i(TAG, "----check snapshot1 enter---- : " + realtimeData1.getPlace());
-                        }
-                        onGetDataListener_Main.onSuccess();
-                    }
-                }
-            }
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                Log.i(TAG,"----onChildRemoved----" + snapshot.getKey());
-                int inDex = Character.getNumericValue(snapshot.getKey().charAt(0));
-                realTimeDataArrayList.get(inDex-1).remove(1);
-                onGetDataListener_Main.onSuccess();
-
-            }
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                Log.i(TAG,"----onChildMoved----");
-            }
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                onGetDataListener_Main.onFailed(databaseError);
-                Log.i(TAG,"----onCancelled----");
-            }
-        });
     }
 
      public void clickGoPlusPlan(View view){
@@ -765,101 +460,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         }
     }
 
-
-
-    public interface OnGetDataListener {
-        public void onStart();
-        public void onSuccess();
-        public void onFailed(DatabaseError databaseError);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    public void listingAllImage() throws ExecutionException, InterruptedException {
-
-        GooglePhotoReference googlePhotoReference=(GooglePhotoReference) getApplication();
-        Context context=this;
-        PhotoUploadRunnable photoUploadRunnable = new PhotoUploadRunnable(this, planItem, googlePhotoReference);
-        PhotoRequestSupplier photoRequestSupplier = new PhotoRequestSupplier(context, planItem, googlePhotoReference);
-        CompletableFuture.runAsync(photoUploadRunnable);
-        // 지금은 Thread하나만 이용해서 upload중인데 이거 바꿀생각
-
-        CompletableFuture.supplyAsync(photoRequestSupplier)
-                .thenApply(new Function<List<List<PlanPhotoData>>, List<List<PlanPhotoData>>>() {
-                    @Override
-                    public List<List<PlanPhotoData>> apply(List<List<PlanPhotoData>> lists) {
-                        //만약 realtimedata가 더 늦게 받아진다면? 그럴일을 거의 없긴함 while(realTimeDataArrayList!=null)
-                        while (!ReadDbSchedule) {
-                            Log.i(TAG, "Not Yet Read Schedule" + ReadDbSchedule);
-                        }
-                        // 처음 delete 밑의것이 true로 바뀜에 따라 onSuccess실행
-                        ReadDBDeletionFirst=true;
-                        PhotoDeleteRequest.DeleteFirstRequest(lists, trashPhotos);
-                        PhotoSortRequest.sortingRequest(planItem, realTimeDataArrayList, lists);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                AllListingPhotos=true;
-                                adapter.notifyDataSetChanged();
-                            }
-                        });
-
-                        if (messageCheck = true) {
-                            showMessage();
-                        }
-                        return lists;
-                    }
-                });
-
-
-        /*
-        GooglePhotoProvider googlePhotoProvider=new GooglePhotoProvider(token);
-        photoBaseUrl = googlePhotoProvider.getPhotoUrl(planItem.getAlbumId());
-        // 날짜별로 나누는 것
-        // 그 날짜의 11:59:59초
-        Calendar dates=planItem.putStartDates();
-        dates.set(Calendar.HOUR_OF_DAY, 23);
-        dates.set(Calendar.MINUTE, 59);
-        dates.set(Calendar.SECOND, 59);
-        dates.set(Calendar.MILLISECOND, 999);
-
-        ArrayList< ArrayList< PlanPhotoData > > photoData=new ArrayList<>();
-        ArrayList<PlanPhotoData> oneDayData=new ArrayList<>();
-        Iterator<PlanPhotoData> it=photoBaseUrl.iterator();
-        while(it.hasNext()) {
-            if(dates.before(it.next().getCreationTime()) ){
-                oneDayData.add(it.next());
-            } else{
-                photoData.add(oneDayData);
-                dates.add(Calendar.DATE, 1);
-                oneDayData.clear();
-            }
-        }
-        /*
-        while(it.hasNext()) {
-            if(dates.getTimeInMillis() > it.next().getCreationTime().getSeconds()*1000 ){
-                oneDayData.add(it.next());
-            } else{
-                photoData.add(oneDayData);
-                dates.add(Calendar.DATE, 1);
-                oneDayData.clear();
-            }
-        }
-
-
-        Log.i(TAG, String.valueOf(photoData.size()));
-    }
-
-    public class ExampleRunnable implements Runnable {
-
-        @Override
-        public void run() {
-
-        }
-    }
-    */
-
-    }
-
     public void showMessage(){
         builder = null;
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -897,49 +497,12 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         time_check = time;
         startActivityForResult(intent,RC_PLAN_MAIN);
     }
+    // PlanMainSchedule
+    // 각각 추가될때
+    // 아무것도 없는 상태에서 계획추가하면 added
+    // 하나라도 있는 상태에서 계획 추가하면 changed, 제거도 마찬가지
+    // 하나있는 상태에서 제거하면 removed
 
-
-    public class NetworkReceiver extends BroadcastReceiver {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            Log.i(TAG,"THis will be get");
-            ConnectivityManager conn = (ConnectivityManager)
-                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo networkInfo = conn.getActiveNetworkInfo();
-
-            // Checks the user prefs and the network connection. Based on the result, decides whether
-            // to refresh the display or keep the current display.
-            // If the userpref is Wi-Fi only, checks to see if the device has a Wi-Fi connection.
-            if (WIFI.equals(sPref) && networkInfo != null
-                    && networkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
-                // If device has its Wi-Fi connection, sets refreshDisplay
-                // to true. This causes the display to be refreshed when the user
-                // returns to the app.
-                refreshDisplay = true;
-                wifiConnected = true;
-
-                try {
-                    listingAllImage();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                //text_wifi.setText(wifi_connect);
-                //text_download.setText(download_accept);
-
-            }
-            else {
-                refreshDisplay = false;
-                wifiConnected = false;
-                Toast.makeText(context, "lost_connection", Toast.LENGTH_SHORT).show();
-
-            }
-
-        }
-    }
 
     private static Boolean checkBoxState=false;
     public void changeCheckState(Boolean checkState){
@@ -963,79 +526,10 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     }
 
 
-    private void deleteSelectedPhoto(){
-
-        Map<String, Object> photos=new HashMap<>();
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle("알림") ;//제목
-        dialog.setMessage("체크된 사진들을 모두 삭제합니다.\n정말 삭제하시겠습니까?"); // 메시지
-
-        dialog.setNegativeButton("취소", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
-
-        dialog.setPositiveButton("확인", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                int day_index=0;
-                for(ArrayList<RealtimeData> realtimeDataList: realTimeDataArrayList){
-                    for(RealtimeData realtimeData : realtimeDataList){
-                        Iterator<PlanPhotoData> iterator=realtimeData.getPhotoDataList().iterator();
-                        while (iterator.hasNext()) {
-                            PlanPhotoData planPhotoData = iterator.next();
-                            if(planPhotoData.getCheck()){
-                                //(100+day_index) 최대 3자리가능, 365최대 다시 받아올때 -100
-                                String[] filename =planPhotoData.getFilename().split("\\.");
-                                photos.put(filename[0], day_index + String.valueOf(planPhotoData.getCreationTimeLong()));
-                                iterator.remove();
-                            }
-                        }
-                    }
-                    day_index++;
-                }
-                dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).updateChildren(photos);
-                mOnKeyBackPressedListener.onBack(true);
-                changeCheckState(!checkBoxState);
-                MyDeletion=true;
-                //adapter.notifyDataSetChanged();
-            }
-        });
-        dialog.show();
-    }
 
     private interface OnTrashDataListener {
         public void onSuccess();
         public void onFailed(DatabaseError databaseError);
-    }
-
-    private void readTrashPhotos(OnTrashDataListener listener){
-        int cnt=0;
-        dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).orderByValue().addChildEventListener(new ChildEventListener() {
-            @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                if(snapshot.exists()){
-                    String timestamp=snapshot.getValue(String.class);
-                    int days= Integer.parseInt(timestamp.substring(0, String.valueOf(planItem.getPlanDates()).length()));
-                    trashPhotos.get(days).put(snapshot.getKey() , Long.parseLong(timestamp.substring(String.valueOf(planItem.getPlanDates()).length())));
-                }
-                listener.onSuccess();
-            }
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-            }
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-            }
-        });
     }
 
     public interface onKeyBackPressedListener {
@@ -1088,10 +582,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             public void onClick(DialogInterface dialog, int which) {
                 for(ArrayList<RealtimeData> realtimeDataList: realTimeDataArrayList){
                     for(RealtimeData realtimeData : realtimeDataList){
-                        Iterator<PlanPhotoData> iterator=realtimeData.getPhotoDataList().iterator();
-                        while (iterator.hasNext()) {
-                            PlanPhotoData planPhotoData = iterator.next();
-                            if(planPhotoData.getCheck()){
+                        for (PlanPhotoData planPhotoData : realtimeData.getPhotoDataList()) {
+                            if (planPhotoData.getCheck()) {
                                 //(100+day_index) 최대 3자리가능, 365최대 다시 받아올때 -100
                                 downloadList.add(planPhotoData);
                             }
@@ -1107,5 +599,51 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         });
         dialog.show();
     }
+    private void deleteSelectedPhoto(){
 
+        Map<String, Object> photos=new HashMap<>();
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setTitle("알림") ;//제목
+        dialog.setMessage("체크된 사진들을 모두 삭제합니다.\n정말 삭제하시겠습니까?"); // 메시지
+
+        dialog.setNegativeButton("취소", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                int day_index=0;
+                StringBuilder dayString= new StringBuilder(String.valueOf(day_index));
+                while(String.valueOf(planItem.getPlanDates()).length() != dayString.length()) {
+                    dayString.insert(0, "0");
+                }
+
+                for(ArrayList<RealtimeData> realtimeDataList: realTimeDataArrayList){
+                    for(RealtimeData realtimeData : realtimeDataList){
+                        Iterator<PlanPhotoData> iterator=realtimeData.getPhotoDataList().iterator();
+                        while (iterator.hasNext()) {
+                            PlanPhotoData planPhotoData = iterator.next();
+                            if(planPhotoData.getCheck()){
+                                //(100+day_index) 최대 3자리가능, 365최대 다시 받아올때 -100
+                                String[] filename =planPhotoData.getFilename().split("\\.");
+                                photos.put(filename[0], dayString + String.valueOf(planPhotoData.getCreationTimeLong()));
+                                iterator.remove();
+                            }
+                        }
+                    }
+                    day_index++;
+                }
+                dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).updateChildren(photos);
+                mOnKeyBackPressedListener.onBack(true);
+                changeCheckState(!checkBoxState);
+                MyDeletion=true;
+                //adapter.notifyDataSetChanged();
+            }
+        });
+        dialog.show();
+    }
 }

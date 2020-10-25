@@ -35,7 +35,6 @@ public class PlanPagerAdapter extends FragmentStatePagerAdapter {
     @NonNull
     @Override
     public PlanFragment getItem(int position) {
-        Log.d(TAG, " postiion");
         return PlanFragment.newInstance(position, planItem, titles.get(position), realTimeDataArrayList.get(position));//,titles.get(position));
     }
 
@@ -46,11 +45,11 @@ public class PlanPagerAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public int getItemPosition(Object object) {
-        Log.d(TAG, " getItemPosition");
+        Log.i(TAG, "AasfdasdfSDF");
         PlanFragment fragment = (PlanFragment) object;
         String title = fragment.getTitle();
         int position = titles.indexOf(title);
-        //Log.i(TAG, String.valueOf(position));
+        Log.i(TAG, String.valueOf(position));
 
         if (position >= 0) {
             fragment.update(realTimeDataArrayList.get(position));

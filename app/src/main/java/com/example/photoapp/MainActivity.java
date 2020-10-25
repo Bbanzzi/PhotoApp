@@ -34,8 +34,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private GoogleSignInClient mGoogleSignInClient;
     private static final int RC_SIGN_IN= 1001;
     private FirebaseAuth mAuth = FirebaseAuth.getInstance();
-    public static GoogleApiClient mGoogleApiClient;
-    public static GoogleSignInOptions gso;
+    private static GoogleSignInOptions gso;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

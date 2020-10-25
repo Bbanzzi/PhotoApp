@@ -36,7 +36,6 @@ public class EditPlanScheduleActivity extends AppCompatActivity {
         setActionBar();
         setSpinnerEditPlan();
 
-        PlanMainActivity.FIRST_READ_MAIN = false;
         hour_editPlan = (EditText) findViewById(R.id.hour_editPlan);
         min_editPlan = (EditText) findViewById(R.id.min_editPlan);
         place_editPlan = (EditText) findViewById(R.id.place_editPlan);

@@ -146,7 +146,6 @@ public class PlanScheduleActivity extends AppCompatActivity{
         rowCell7 = new ArrayList<>(Collections.nCopies(days_num,new Cell("-")));
         rowCell8 = new ArrayList<>(Collections.nCopies(days_num,new Cell("-")));
 
-        PlanMainActivity.FIRST_READ_MAIN = false;
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         initData();
         onCreateView();
