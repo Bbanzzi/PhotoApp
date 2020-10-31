@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
@@ -60,7 +61,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public class PlanMainActivity extends AppCompatActivity implements View.OnClickListener, PlanMainSchedule.OnScheduleReadInterface, PlanMainPhotoListing.OnListingInterface{
+public class PlanMainActivity extends AppCompatActivity implements View.OnClickListener, PlanMainPhotoListing.OnListingInterface {
 
     private static final String TAG = "PlanMainActivity";
 
@@ -73,7 +74,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
     private ArrayList< ArrayList<RealtimeData> > realTimeDataArrayList=new ArrayList<>();
     private List<List<PlanPhotoData>> planPhotoArrayList;
-    private List<Map<String, Long>> trashPhotos=new ArrayList<>();
+    private List<Map<String, Long>> trashPhotos;
 
     public static final int RC_PLAN_MAIN=1007;
     private DatabaseReferenceData dbReference;
@@ -93,11 +94,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private ImageButton btn_deletephoto;
     private ImageButton btn_downloadphoto;
     private ImageButton btn_photoselectmenu;
-
-    private static boolean ReadDbSchedule=false; // firebase 가 늦게 읽었을 경우 대비
-    private static boolean ReadDBDeletionFirst=false; // fireabse 가 늦게 읽었을 경우 대비
-    private static boolean MyDeletion=false;   // 내가 사진을 지운 경우 firebase에서 다시 읽어오는 것보다 바로 삭제하기
-    private static boolean AllListingPhotos=false; // 모든 사진을 처음 다 정렬함
 
     public static boolean CHECK_EDIT_MAIN = false;
     public static boolean CHECK_DEL_MAIN = false;
@@ -158,10 +154,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         for(int i=0; i<days ; i++){
             ArrayList<RealtimeData> EmptyRealTimeData=new ArrayList<RealtimeData>();
-            Map<String, Long> empty=new HashMap<>();
             EmptyRealTimeData.add(new RealtimeData());
             realTimeDataArrayList.add(EmptyRealTimeData);
-            trashPhotos.add(empty);
         }
 
         // 화면 생성
@@ -195,7 +189,18 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         planMainPhotoDownload.registerDownloadManagerReceiver();
 
         //PlanSchedule Listener
-        planMainSchedule=new PlanMainSchedule(dbReference.getDbPlanScheduleRef().child(planItem.getKey()), realTimeDataArrayList, this);
+        //일단 동기화는 주석처리
+        planMainSchedule=new PlanMainSchedule(dbReference.getDbPlanScheduleRef().child(planItem.getKey()), realTimeDataArrayList, new PlanMainSchedule.OnScheduleReadInterface() {
+            @Override
+            public void onDataAdded() {
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onFailed() {
+
+            }
+        });
         //Listing 작업
         planMainPhotoListing=new PlanMainPhotoListing(this, planItem,
                 dbReference, (GooglePhotoReference)getApplication(),this);
@@ -205,14 +210,17 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             @Override
             public void onConnected() {
                 try {
-                    planMainPhotoListing.listingAllImage();
+                    planMainPhotoListing.listingAllPhotos();
                 } catch (ExecutionException | InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-
             @Override
             public void onFailed(boolean Wifi, boolean data, boolean downloadOnlyWIFI) {
+                if(data & downloadOnlyWIFI)
+                    Toast.makeText(getBaseContext(), "WIFI로만 설정되어있습니다.", Toast.LENGTH_LONG).show();
+                else if(!data)
+                    Toast.makeText(getBaseContext(), "연결이 끊겨있습니다.", Toast.LENGTH_LONG).show();
                 Log.i(TAG, "Wifi " + Wifi + "Data" + data + "My setting :" + downloadOnlyWIFI);
             }
         });
@@ -223,7 +231,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     @Override
     public void onPause(){
         super.onPause();
-
         Log.i(TAG, "----onPause main----");
     }
 
@@ -239,12 +246,14 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         //planMainSchedule.unregisterReadChildEventListener();
         //PhotoConnection
         planMainConnection.unregisterNetworkReceiver();
+
+        // deleteChildListener 제거
+        if(planMainPhotoListing.registerChileEventListener()) planMainPhotoListing.removeDeleteChildEventListener();
     }
 
     @Override
     public void onResume(){
         super.onResume();
-        changeCheckState(false);
         Log.i(TAG, "----onResume main----");
     }
 
@@ -252,23 +261,19 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     public void onStart () {
         super.onStart();
         //listener 제거?
+        Log.i(TAG, "----onStart----");
         planMainSchedule.registerReadValueEventListener();
     }
 
-
-    @Override
-    public void onDataAdded() {
-        adapter.notifyDataSetChanged();
-    }
-
+    // Photo Listing listner에 따른 작업
     @Override
     public void onListed(List<List<PlanPhotoData>> lists, List<Map<String, Long>> trashPhotos) {
-        planMainPhotoListing.sortingAllImage(realTimeDataArrayList, lists);
+        this.trashPhotos=trashPhotos;
+        planMainPhotoListing.addDeleteChileEventListener(realTimeDataArrayList);
+        planMainPhotoListing.sortingAllPhotos(realTimeDataArrayList, lists);
     }
-
     @Override
     public void onSorted() {
-        Log.i(TAG, String.valueOf(realTimeDataArrayList.get(2).get(0).getPhotoDataList().size()));
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -276,12 +281,10 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             }
         });
     }
-
     @Override
     public void onUpdated() {
-
+        adapter.notifyDataSetChanged();
     }
-
     @Override
     public void onFailed() {
 
@@ -319,7 +322,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 break;
 
             case R.id.btn_deletephoto:
-                deleteSelectedPhoto();
+                deleteTrashPhotos();
                 break;
 
             case R.id.btn_downloadphoto:
@@ -497,16 +500,18 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         time_check = time;
         startActivityForResult(intent,RC_PLAN_MAIN);
     }
-    // PlanMainSchedule
-    // 각각 추가될때
-    // 아무것도 없는 상태에서 계획추가하면 added
-    // 하나라도 있는 상태에서 계획 추가하면 changed, 제거도 마찬가지
-    // 하나있는 상태에서 제거하면 removed
 
-
+    // check상태를 관리
     private static Boolean checkBoxState=false;
-    public void changeCheckState(Boolean checkState){
+    private onKeyBackPressedListener mOnKeyBackPressedListener;
+    public void setOnKeyBackPressedListener(onKeyBackPressedListener listener){
+        this.mOnKeyBackPressedListener=listener;
+    }
 
+    // Icon들을 바꿈
+    public void changeCheckState(Boolean checkState){
+        if(!checkState)
+            mOnKeyBackPressedListener.onBack(false);
         checkBoxState=checkState;
         if(checkBoxState){
             planschedulebtn.setVisibility(View.GONE);
@@ -524,32 +529,16 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         adapter.notifyDataSetChanged();
     }
-
-
-
-    private interface OnTrashDataListener {
-        public void onSuccess();
-        public void onFailed(DatabaseError databaseError);
-    }
-
-    public interface onKeyBackPressedListener {
-        public void onBack(Boolean checkBoxState);
-    }
-    private onKeyBackPressedListener mOnKeyBackPressedListener;
-
-    public void setOnKeyBackPressedListener(onKeyBackPressedListener listner){
-        this.mOnKeyBackPressedListener=listner;
-    }
-
+    // 뒤로가기 눌렀을 경우 checkbox상태인 경우는 check box만 원래대로 되돌린다.
     @Override
     public void onBackPressed() {
         if(checkBoxState){
-            mOnKeyBackPressedListener.onBack(true);
-            changeCheckState(!checkBoxState);
+            changeCheckState(false);
         }else{
             super.onBackPressed();
         }
     }
+
 
     private final static Comparator<RealtimeData> timeComparator = new Comparator<RealtimeData>() {
         private final Collator collator = Collator.getInstance();
@@ -590,7 +579,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                         }
                     }
                 }
-                mOnKeyBackPressedListener.onBack(true);
                 changeCheckState(!checkBoxState);
                 //Snackbar
                 // Asnyc작업
@@ -599,10 +587,12 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         });
         dialog.show();
     }
-    private void deleteSelectedPhoto(){
+
+    public void deleteTrashPhotos(){
 
         Map<String, Object> photos=new HashMap<>();
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+
+        androidx.appcompat.app.AlertDialog.Builder dialog = new androidx.appcompat.app.AlertDialog.Builder(this);
         dialog.setTitle("알림") ;//제목
         dialog.setMessage("체크된 사진들을 모두 삭제합니다.\n정말 삭제하시겠습니까?"); // 메시지
 
@@ -617,11 +607,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 int day_index=0;
-                StringBuilder dayString= new StringBuilder(String.valueOf(day_index));
-                while(String.valueOf(planItem.getPlanDates()).length() != dayString.length()) {
-                    dayString.insert(0, "0");
-                }
-
                 for(ArrayList<RealtimeData> realtimeDataList: realTimeDataArrayList){
                     for(RealtimeData realtimeData : realtimeDataList){
                         Iterator<PlanPhotoData> iterator=realtimeData.getPhotoDataList().iterator();
@@ -630,7 +615,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                             if(planPhotoData.getCheck()){
                                 //(100+day_index) 최대 3자리가능, 365최대 다시 받아올때 -100
                                 String[] filename =planPhotoData.getFilename().split("\\.");
-                                photos.put(filename[0], dayString + String.valueOf(planPhotoData.getCreationTimeLong()));
+                                photos.put(filename[0], day_index + String.valueOf(planPhotoData.getCreationTimeLong()));
+                                trashPhotos.get(day_index).put(filename[0], Long.parseLong(day_index + String.valueOf(planPhotoData.getCreationTimeLong())));
                                 iterator.remove();
                             }
                         }
@@ -638,12 +624,11 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                     day_index++;
                 }
                 dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()).updateChildren(photos);
-                mOnKeyBackPressedListener.onBack(true);
                 changeCheckState(!checkBoxState);
-                MyDeletion=true;
-                //adapter.notifyDataSetChanged();
             }
         });
         dialog.show();
+
     }
+
 }

@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 public class PhotoListRequestSupplier implements Supplier<List<List<PlanPhotoData>>> {
     @Override
     public List<List<PlanPhotoData>> get() {
-        Log.i(TAG, "ASDFASDFASDf0");
         Log.i(TAG, Thread.currentThread().getName());
         getPhotoUrl(planItem.getAlbumId());
         return filterByDate(planItem.putStartDates(),planItem.getPlanDates());

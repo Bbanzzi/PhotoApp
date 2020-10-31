@@ -25,10 +25,9 @@ public class PhotoDeleteRequest{
     private static final String TAG = "PhotoDeleteRequest";
 
 
-    public static void DeleteFirstRequest(List<List<PlanPhotoData>> planPhotoDataArrayList , List<Map <String , Long>> trashPhotoDataList) {
+    public static void deleteFirstRequest(List<List<PlanPhotoData>> planPhotoDataArrayList , List<Map <String , Long>> trashPhotoDataList) {
 
         int day_index = 0;
-        long startTime = System.nanoTime();
         for (Map <String, Long> trashPhotoList : trashPhotoDataList) {
             Iterator<String> iterator= trashPhotoList.keySet().iterator();
             while(iterator.hasNext()){
@@ -42,55 +41,25 @@ public class PhotoDeleteRequest{
                 for(int i=0; i<planPhotoDataArrayList.get(day_index).size() ; i++){
                     if(planPhotoDataArrayList.get(day_index).get(i).getFilename().split("\\.")[0].equals(trashPhoto)){
                         planPhotoDataArrayList.get(day_index).remove(i);
-                        iterator.remove();
-                        Log.i(TAG, "Deleted!");
                         break;
                     }
                 }
             }
             day_index++;
-            Log.i(TAG, "Size is " +trashPhotoList.size());
         }
-
-        long endTime = System.nanoTime();
-
-        long duration = endTime - startTime;
-        System.out.println("Second run: "+duration);
     }
 
-    public static void deleteOtherRequest(PlanItem planItem, ArrayList<ArrayList<RealtimeData>> lists , List<Map<String , Long>> trashPhotoDataList){
+    public static void deleteOtherRequest(PlanItem planItem, ArrayList<ArrayList<RealtimeData>> lists , int days, String filename, long time){
 
-        int day_index = 0;
-        long startTime = System.nanoTime();
+        int realTimeData_index= getRealTimeDataIndex(planItem.putStartDates(), days, lists.get(days), time);
 
-        for ( Map<String, Long> trashPhotoList : trashPhotoDataList) {
-
-            Iterator<String> iterator= trashPhotoList.keySet().iterator();
-            while(iterator.hasNext()){
-
-                String filename=iterator.next();
-                long trashPhotoTime=trashPhotoList.get(filename);
-                int realTimeData_index= getRealTimeDataIndex(planItem.putStartDates(), day_index, lists.get(day_index), trashPhotoTime);
-
-                for( int i=0 ; i<lists.get(day_index).get(realTimeData_index).getPhotoDataList().size() ; i++){
-                    Log.i(TAG, lists.get(day_index).get(realTimeData_index).getPhotoDataList().get(i).getFilename() + filename);
-                    if(lists.get(day_index).get(realTimeData_index).getPhotoDataList().get(i).getFilename().split("\\.")[0].equals(filename)){
-                        lists.get(day_index).get(realTimeData_index).getPhotoDataList().remove(i);
-                        iterator.remove();
-                        Log.i(TAG, "Find : " + filename );
-                        break;
-                    }
-                }
+        for( int i=0 ; i<lists.get(days).get(realTimeData_index).getPhotoDataList().size() ; i++){
+            Log.i(TAG, lists.get(days).get(realTimeData_index).getPhotoDataList().get(i).getFilename() + filename);
+            if(lists.get(days).get(realTimeData_index).getPhotoDataList().get(i).getFilename().split("\\.")[0].equals(filename)){
+                lists.get(days).get(realTimeData_index).getPhotoDataList().remove(i);
+                break;
             }
-            day_index++;
-            Log.i(TAG, "Size is " +trashPhotoList.size());
-
         }
-
-        long endTime = System.nanoTime();
-
-        long duration = endTime - startTime;
-        System.out.println("Second run: "+duration);
     }
 
     private static int getRealTimeDataIndex(Calendar startDates, int day, ArrayList<RealtimeData> realTimeData, Long trashPhotoTime){

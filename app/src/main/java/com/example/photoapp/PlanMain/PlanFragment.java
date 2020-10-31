@@ -27,7 +27,7 @@ import java.util.List;
 public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.OnPhotoItemSelectedInterface,
         PlanPlaceRecyclerAdapter.OnPhotoItemLongSelectedInterface,
         PlanPlaceRecyclerAdapter.OnPlaceItemClickedInterface,
-        PlanMainActivity.onKeyBackPressedListener{
+        onKeyBackPressedListener{
 
     private RecyclerView recyclerView;
     private PlanPlaceRecyclerAdapter sectionAdapter;
@@ -116,9 +116,7 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
                 this.items.addAll(realTimeData.getPhotoDataList());
             }
         }
-        Log.i(TAG, String.valueOf(this.items.size()));
-        sectionAdapter.update(this.items);
-        Log.i(TAG, "ASDF");
+        sectionAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -129,14 +127,16 @@ public class PlanFragment  extends Fragment implements PlanPlaceRecyclerAdapter.
         ((PlanMainActivity)getActivity()).startEditPlanWithClick(place,memo,time);
     }
 
+    // check상태로 바꾸는 것
     @Override
     public void onPhotoItemLongSelected(View v, Boolean checkState, int position) {
         ((PlanMainActivity)getActivity()).changeCheckState(checkState);
     }
 
+    //뒤로 가기를 눌럿을 경우
     @Override
     public void onBack(Boolean checkBoxState) {
-        if(checkBoxState){
+        if(!checkBoxState){
             sectionAdapter.setCheckBoxState(false);
         }else{
             PlanMainActivity activity=(PlanMainActivity)getActivity();

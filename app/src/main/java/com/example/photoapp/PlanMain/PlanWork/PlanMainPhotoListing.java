@@ -41,6 +41,7 @@ public class PlanMainPhotoListing {
     private PlanItem planItem;
     private DatabaseReferenceData dbReference;
     private GooglePhotoReference googlePhotoReference;
+    private List<Map<String,Long>> trashPhotos;
 
     private OnListingInterface onListingListener;
     public interface OnListingInterface{
@@ -58,9 +59,9 @@ public class PlanMainPhotoListing {
         this.onListingListener=onListingListener;
     }
 
-
+    //처음 Listing
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public void listingAllImage() throws ExecutionException, InterruptedException {
+    public void listingAllPhotos() throws ExecutionException, InterruptedException {
 
         //PhotoUploadRunnable photoUploadRunnable = new PhotoUploadRunnable(this, planItem, googlePhotoReference);
         PhotoListRequestSupplier photoListRequestSupplier = new PhotoListRequestSupplier(context, planItem, googlePhotoReference);
@@ -72,20 +73,21 @@ public class PlanMainPhotoListing {
                         (CompletableFuture.supplyAsync(new Supplier< List<Map<String,Long>>>() {
                             @Override
                             public List<Map<String, Long>> get() {
-                                return PlanMainPhotoDelete.firstReadTrashPhotos(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), planItem);
+                                return trashPhotos=PlanMainPhotoDelete.addDeleteSingleValueEvent(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), planItem);
                             }
                         })
                         , new BiFunction<List<List<PlanPhotoData>>, List<Map<String, Long>>, List<List<PlanPhotoData>>>() {
                     @Override
                     public List<List<PlanPhotoData>> apply(List<List<PlanPhotoData>> lists, List<Map<String, Long>> trashPhotos) {
-                        PhotoDeleteRequest.DeleteFirstRequest(lists, trashPhotos);
+                        PhotoDeleteRequest.deleteFirstRequest(lists, trashPhotos);
                         onListingListener.onListed(lists, trashPhotos);
                         return lists;
                     }
                 });
     }
 
-    public void sortingAllImage(ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList, List<List<PlanPhotoData>> photos){
+    //다음 sorting
+    public void sortingAllPhotos(ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList, List<List<PlanPhotoData>> photos){
         CompletableFuture.supplyAsync(new Supplier<ArrayList<ArrayList<RealtimeData>>>() {
             @Override
             public ArrayList<ArrayList<RealtimeData>> get() {
@@ -94,6 +96,29 @@ public class PlanMainPhotoListing {
                 return null;
             }
         });
+    }
+
+    private ChildEventListener childEventListener;
+    public void addDeleteChileEventListener(ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList){
+        PlanMainPhotoDelete.addDeleteChileEventListener(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), planItem, childEventListener, trashPhotos, new PlanMainPhotoDelete.OnTrashDataListener() {
+            @Override
+            public void onSuccess(int days, String fileName , long time) {
+                PhotoDeleteRequest.deleteOtherRequest(planItem, realTimeDataArrayList, days, fileName, time);
+                onListingListener.onUpdated();
+            }
+
+            @Override
+            public void onFailed(DatabaseError databaseError) {
+
+            }
+        });
+    }
+    public boolean registerChileEventListener(){
+        return childEventListener != null;
+    }
+
+    public void removeDeleteChildEventListener(){
+        PlanMainPhotoDelete.removeDeleteChildEventListener(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), childEventListener);
     }
 
 }
