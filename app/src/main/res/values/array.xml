@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="나라">
+        <item>나라 선택</item>
+        <item>서울(한국)</item>
+        <item>도쿄(일본)</item>
+        <item>베이징(중국)</item>
+        <item>뉴욕(미국)</item>
+        <item>로스엔젤레스(미국)</item>
+        <item>멕시코시티(멕시코)</item>
+        <item>런던(영국)</item>
+        <item>파리(프랑스)</item>
+        <item>모스크바(러시아)</item>
+        <item>시드니(호주)</item>
+        <item>두바이(아랍에미리트)</item>
+        <item>케이프타운(남아공)</item>
+    </string-array>
+</resources>

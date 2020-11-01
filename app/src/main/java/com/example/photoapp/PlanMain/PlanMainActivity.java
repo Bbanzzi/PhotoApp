@@ -118,6 +118,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     Bundle saveInstanceState_re;
     public static String[] col_day;
     public static String[] col_day_firebase;
+    public static String nation_name;
 
     //Snackbar layout
     private ConstraintLayout mainlayout;
@@ -159,6 +160,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             col_day[i] = selectDays.substring(5 * i + 4, 5 * i + 9);
             col_day_firebase[i] = (i+1) + "일" + col_day[i].replace(".","");
         }
+        nation_name = onSearchNation( planItem.getPosNation() );
 
         btn_back_inPlanMain=(ImageButton)findViewById(R.id.btn_back_inPlanMain);
         planschedulebtn=(ImageButton)findViewById(R.id.btn_menu);
@@ -249,6 +251,52 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             }
         });
         planMainConnection.registerNetworkReceiver();
+    }
+
+    private String onSearchNation(int posNation) {
+        String gmt_plus_str = null;
+        switch (posNation) {
+            case 0 :
+                Toast.makeText(getApplicationContext(), "나라가 등록되지 않았습니다.",Toast.LENGTH_SHORT).show();
+                break;
+            case 1 :
+                gmt_plus_str = "+09:00";
+                break;
+            case 2 :
+                gmt_plus_str = "+09:00";
+                break;
+            case 3 :
+                gmt_plus_str = "+08:00";
+                break;
+            case 4 :
+                gmt_plus_str = "-05:00";
+                break;
+            case 5 :
+                gmt_plus_str = "-08:00";
+                break;
+            case 6 :
+                gmt_plus_str = "-06:00";
+                break;
+            case 7 :
+                gmt_plus_str = "+00:00";
+                break;
+            case 8 :
+                gmt_plus_str = "+01:00";
+                break;
+            case 9 :
+                gmt_plus_str = "+02 :00";
+                break;
+            case 10 :
+                gmt_plus_str = "+11:00";
+                break;
+            case 11 :
+                gmt_plus_str = "+04:00";
+                break;
+            case 12 :
+                gmt_plus_str = "+01:00";
+                break;
+        }
+        return gmt_plus_str;
     }
 
 
@@ -444,11 +492,11 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                     Uri uri = data.getData();
                     Log.i(TAG, "----uri of selected img---- :"  + uri.toString());
                     ClipData clipData = data.getClipData();
-                    Log.i(TAG, "----number of selected img---- :"  + data.getClipData().getItemCount());
+                    //Log.i(TAG, "----number of selected img---- :"  + data.getClipData().getItemCount());
                     //Uri selectedImageUri = clipData.getItemAt(0).getUri();
                     GooglePhotoReference googlePhotoReference=(GooglePhotoReference) getApplication();
                     Context context=this;
-                    GalleryUploadRunable galleryUploadRunable = new GalleryUploadRunable(this, planItem, data, googlePhotoReference);
+                    GalleryUploadRunable galleryUploadRunable = new GalleryUploadRunable(this, planItem, data, googlePhotoReference,nation_name);
                     Log.i(TAG, "----galleryUploadRunable implement---- :" );
                     CompletableFuture.runAsync(galleryUploadRunable);
 

@@ -41,8 +41,6 @@ public class CreatePlanActivity extends AppCompatActivity{
 
     private static final String TAG="CreatedActivity";
 
-    private static DatabaseReferenceData dbReference;
-
     private static CustomCalendarDialog customCalendarDialog;
     private static Calendar startDates;
     private static Calendar endDates;
@@ -55,6 +53,7 @@ public class CreatePlanActivity extends AppCompatActivity{
     private static int CheckEdit = 0;
     private Boolean galleryCheck = false;
     private Boolean radioCheck;
+    private static int pos_nation;
 
     // Dialog를 위한 context -> theme설정
     private ContextThemeWrapper ctx ;
@@ -92,12 +91,25 @@ public class CreatePlanActivity extends AppCompatActivity{
             String endDates_str = "~ " + planItem_intent.getEndDates_str();
 
             gettitle.setText(planItem_intent.getPlanTitle());
-            getdest.setText( planItem_intent.getPlanDest());
+            getdest.setSelection(planItem_intent.getPosNation());
+            pos_nation = planItem_intent.getPosNation();
             getpersonnel.setText(personNum);
             startdates.setText(planItem_intent.getStartDates_str());
             enddates.setText(endDates_str);
 
         }
+
+        pos_nation = 0;
+        getdest.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                pos_nation = position;
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                Toast.makeText(getApplicationContext(), "나라를 선택해주세요", Toast.LENGTH_SHORT).show();
+            }
+        });
         //달력창
         customCalendarDialog= new CustomCalendarDialog(this);
         customCalendarDialog.setCustomCalendarDialogListener(new CustomCalendarDialog.CustomCalendarDialogListener() {
@@ -242,9 +254,6 @@ public class CreatePlanActivity extends AppCompatActivity{
     }
 
     public void setPlan(View v) {
-
-
-
         if (gettitle.getText().toString().length() == 0) {
             Toast.makeText(v.getContext().getApplicationContext(), "제목를 입력해주세요", Toast.LENGTH_SHORT).show();
         } else if (getdest.getText().toString().length() == 0) {
@@ -263,6 +272,8 @@ public class CreatePlanActivity extends AppCompatActivity{
                 if(galleryCheck) {
                     galleryCheck_int = 1;
                 }
+                planItem.setGalleryCheck(galleryCheck_int);
+                planItem.setPosNation(pos_nation);
 
                 PlanItem planItem = new PlanItem(planTitle, planDest, planPersonnel, startDates, endDates, selectedDays_str, index + 1);
                 planItem.setAlbumId(albumInfo.get("AlbumId"));
