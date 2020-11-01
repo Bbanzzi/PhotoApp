@@ -1,7 +1,6 @@
 package com.example.photoapp.PlanMain.PhotoWork;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.location.Location;
@@ -9,18 +8,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.view.View;
-import android.widget.ProgressBar;
 
 import androidx.annotation.RequiresApi;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.exifinterface.media.ExifInterface;
 
 import com.example.photoapp.Data.GooglePhotoReference;
 import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanMain.PlanSetting;
-import com.example.photoapp.R;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.photos.library.v1.PhotosLibraryClient;
 import com.google.photos.library.v1.proto.BatchCreateMediaItemsResponse;
 import com.google.photos.library.v1.proto.NewMediaItem;
@@ -83,7 +77,6 @@ public class PhotoUploadRunnable implements Runnable {
     @Override
     public void run() {
 
-        planSetting=planItem.getStartDatesTimeStamp() + planItem.getAlbumTitle();
         getPhotosAccordingToDate(planItem.putStartDates(), planItem.putEndDates());
         findUploadedFiles();
         if (googlePhotoReference.getAlbumIsWriteable(planItem.getAlbumId())) {
@@ -191,11 +184,8 @@ public class PhotoUploadRunnable implements Runnable {
         //TEst용 삭제
         //PlanSetting.removePhotoUploaded(context,planSetting);
         if(PlanSetting.getPhotoUploaded(context,planSetting) != null){
-            Log.i(TAG, "test1");
             index=Integer.parseInt(PlanSetting.getPhotoUploaded(context,planSetting)) + 1 ;
-            Log.i(TAG, "test1");
             filepaths=filepaths.subList(index, filepaths.size());
-            Log.i(TAG, "test1");
         }
     }
 

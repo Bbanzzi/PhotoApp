@@ -242,6 +242,9 @@ public class CreatePlanActivity extends AppCompatActivity{
     }
 
     public void setPlan(View v) {
+
+
+
         if (gettitle.getText().toString().length() == 0) {
             Toast.makeText(v.getContext().getApplicationContext(), "제목를 입력해주세요", Toast.LENGTH_SHORT).show();
         } else if (getdest.getText().toString().length() == 0) {
@@ -255,6 +258,11 @@ public class CreatePlanActivity extends AppCompatActivity{
                 String planDest = getdest.getText().toString();
                 int planPersonnel = Integer.parseInt(getpersonnel.getText().toString());
                 String selectedDays_str = transCalendarToStr(selectedDays);
+                int galleryCheck_int=0;
+                //if구문 수정
+                if(galleryCheck) {
+                    galleryCheck_int = 1;
+                }
 
                 PlanItem planItem = new PlanItem(planTitle, planDest, planPersonnel, startDates, endDates, selectedDays_str, index + 1);
                 planItem.setAlbumId(albumInfo.get("AlbumId"));
@@ -267,6 +275,7 @@ public class CreatePlanActivity extends AppCompatActivity{
                 userinfo.put("userEmail", LoginInfoProvider.getUserEmail(CreatePlanActivity.this));
                 userinfo.put("userUID", LoginInfoProvider.getUserUID(CreatePlanActivity.this));
 
+                planItem.setGalleryCheck(galleryCheck_int);
                 dbReference.getCreateDbPlansRef().setValue(planItem);
                 dbReference.getCreateDbPlanUsersRef().setValue(userinfo);
                 dbReference.getCreateDbUserPlansRef().child(dbReference.getCreateDbPlansRef().getKey()).setValue(planItem);
