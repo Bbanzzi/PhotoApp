@@ -105,7 +105,6 @@ public class PlanItem implements Parcelable {
     void setEndDates(Calendar endDates) { this.endDates = endDates; }
 
     //public 만 database에 저장됨
-
     public String getPlanTitle(){ return this.planTitle; }
     public String getPlanDest(){
         return this.planDest;
@@ -133,13 +132,6 @@ public class PlanItem implements Parcelable {
     public String getEndDates_str(){
         return getCalendarToStringDates(this.endDates);
     }
-
-
-    /*
-    //Database String 날짜
-    public String getStringStartDates(){ return getCalendarToStringDates(this.startDates);}
-    public String getStringEndDates(){ return getCalendarToStringDates(this.endDates);}
-    */
 
     //AlbumActivity에 표시
     String getStartNEndDates(){

@@ -7,11 +7,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -55,12 +57,14 @@ public class CreatePlanActivity extends AppCompatActivity{
     private Boolean radioCheck;
     private static int pos_nation;
 
+    private DatabaseReferenceData dbReference;
+
     // Dialog를 위한 context -> theme설정
     private ContextThemeWrapper ctx ;
 
     private TextView startdates;
     private TextView enddates;
-    private EditText getdest;
+    private Spinner getdest;
     private EditText getpersonnel;
     private EditText gettitle = null;
 
@@ -78,7 +82,7 @@ public class CreatePlanActivity extends AppCompatActivity{
 
         startdates=(TextView)findViewById(R.id.textview_startdates);
         enddates=(TextView)findViewById(R.id.textview_enddates);
-        getdest=(EditText)findViewById(R.id.edittext_getdest);
+        getdest=(Spinner) findViewById(R.id.spinner_nation);
         getpersonnel=(EditText)findViewById(R.id.edittext_getpersonnel);
         ImageButton btn_close = (ImageButton) findViewById(R.id.button_close);
 
@@ -110,6 +114,7 @@ public class CreatePlanActivity extends AppCompatActivity{
                 Toast.makeText(getApplicationContext(), "나라를 선택해주세요", Toast.LENGTH_SHORT).show();
             }
         });
+
         //달력창
         customCalendarDialog= new CustomCalendarDialog(this);
         customCalendarDialog.setCustomCalendarDialogListener(new CustomCalendarDialog.CustomCalendarDialogListener() {
@@ -256,17 +261,22 @@ public class CreatePlanActivity extends AppCompatActivity{
     public void setPlan(View v) {
         if (gettitle.getText().toString().length() == 0) {
             Toast.makeText(v.getContext().getApplicationContext(), "제목를 입력해주세요", Toast.LENGTH_SHORT).show();
-        } else if (getdest.getText().toString().length() == 0) {
+        }else if( pos_nation== 0){
             Toast.makeText(v.getContext().getApplicationContext(), "나라를 입력해주세요", Toast.LENGTH_SHORT).show();
-        } else if (getpersonnel.getText().toString().length() == 0) {
+        }else if (getpersonnel.getText().toString().length() == 0) {
             Toast.makeText(v.getContext().getApplicationContext(), "인원를 입력해주세요", Toast.LENGTH_SHORT).show();
         } else {
             try {
                 //AlbumActivity로 정보를 옮김
-                String planTitle = gettitle.getText().toString();
-                String planDest = getdest.getText().toString();
-                int planPersonnel = Integer.parseInt(getpersonnel.getText().toString());
+                String planTitle=gettitle.getText().toString();
+                String planDest=getdest.getItemAtPosition(pos_nation).toString();
+                int planPersonnel=Integer.parseInt(getpersonnel.getText().toString());
                 String selectedDays_str = transCalendarToStr(selectedDays);
+
+                PlanItem planItem=new PlanItem(planTitle,planDest,planPersonnel,startDates,endDates,selectedDays_str,index+1);
+                planItem.setAlbumId(albumInfo.get("AlbumId"));
+                planItem.setAlbumTitle(albumInfo.get("AlbumTitle"));
+                planItem.setAlbumSharedToken(albumInfo.get("AlbumSharedToken"));
                 int galleryCheck_int=0;
                 //if구문 수정
                 if(galleryCheck) {
@@ -275,21 +285,16 @@ public class CreatePlanActivity extends AppCompatActivity{
                 planItem.setGalleryCheck(galleryCheck_int);
                 planItem.setPosNation(pos_nation);
 
-                PlanItem planItem = new PlanItem(planTitle, planDest, planPersonnel, startDates, endDates, selectedDays_str, index + 1);
-                planItem.setAlbumId(albumInfo.get("AlbumId"));
-                planItem.setAlbumTitle(albumInfo.get("AlbumTitle"));
-                planItem.setAlbumSharedToken(albumInfo.get("AlbumSharedToken"));
-
 
                 Map<String, Object> userinfo = new HashMap<>();
                 userinfo.put("userName", LoginInfoProvider.getUserName(CreatePlanActivity.this));
                 userinfo.put("userEmail", LoginInfoProvider.getUserEmail(CreatePlanActivity.this));
                 userinfo.put("userUID", LoginInfoProvider.getUserUID(CreatePlanActivity.this));
 
-                planItem.setGalleryCheck(galleryCheck_int);
                 dbReference.getCreateDbPlansRef().setValue(planItem);
                 dbReference.getCreateDbPlanUsersRef().setValue(userinfo);
                 dbReference.getCreateDbUserPlansRef().child(dbReference.getCreateDbPlansRef().getKey()).setValue(planItem);
+
                 Intent intent = new Intent();
                 intent.putExtra("planItem", planItem);
                 setResult(RC_CREATE_PLAN, intent);
