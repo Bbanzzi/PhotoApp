@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,10 +53,11 @@ public class CreatePlanActivity extends AppCompatActivity{
     private ActionBar actionBar;
     private static final int RC_CREATE_PLAN=1005;
     private static int CheckEdit = 0;
+    private Boolean galleryCheck = false;
+    private Boolean radioCheck;
 
     // Dialog를 위한 context -> theme설정
     private ContextThemeWrapper ctx ;
-
 
     private TextView startdates;
     private TextView enddates;
@@ -167,16 +169,6 @@ public class CreatePlanActivity extends AppCompatActivity{
         actionBar.setDisplayHomeAsUpEnabled(false);
         actionBar.setDisplayShowHomeEnabled(false);
 
-        /*
-        Toolbar parent = (Toolbar) mToolCustom.getParent();
-        parent.setContentInsetsAbsolute(0,0);
-
-        ActionBar.LayoutParams parms = new ActionBar.LayoutParams(ActionBar.LayoutParams.MATCH_PARENT,
-                ActionBar.LayoutParams.MATCH_PARENT);
-        actionBar1.setCustomView(mToolCustom,parms);
-
-         */
-
         ImageButton btn_backTOPlanList = (ImageButton) findViewById(R.id.btn_back_inPlanCreate);
         btn_backTOPlanList.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -286,6 +278,16 @@ public class CreatePlanActivity extends AppCompatActivity{
             } catch (NumberFormatException e) {
                 Toast.makeText(v.getContext().getApplicationContext(), "인원에는 숫자만 입력해 주세요", Toast.LENGTH_SHORT).show();
             }
+        }
+    }
+
+    public void onRadioBtnClicked(View view) {
+        radioCheck = ((RadioButton)view).isChecked();
+        switch (view.getId()){
+            case R.id.radiobtn_auto:
+                galleryCheck = false;
+            case R.id.radiobtn_gallery:
+                galleryCheck = true;
         }
     }
 }

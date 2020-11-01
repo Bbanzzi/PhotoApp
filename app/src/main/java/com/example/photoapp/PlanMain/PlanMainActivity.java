@@ -4,11 +4,24 @@ import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.provider.MediaStore;
+import android.util.ArrayMap;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -31,6 +44,7 @@ import com.example.photoapp.Data.DatabaseReferenceData;
 import com.example.photoapp.Data.GooglePhotoReference;
 import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanMain.Photo.PhotoDownloadRequest;
+import com.example.photoapp.PlanMain.PhotoWork.GalleryUploadRunable;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoDeleteRequest;
 import com.example.photoapp.PlanMain.PlanWork.PlanDynamicLink;
 import com.example.photoapp.PlanMain.PlanWork.PlanMainPhotoDelete;
@@ -64,6 +78,7 @@ import java.util.concurrent.ExecutionException;
 public class PlanMainActivity extends AppCompatActivity implements View.OnClickListener, PlanMainPhotoListing.OnListingInterface {
 
     private static final String TAG = "PlanMainActivity";
+    public static final String MIME_TYPE_CONTACT = "vnd.android.cursor.item/vnd.example.contact";
 
     private static PlanItem planItem;
     private static ViewPager viewPager;
@@ -71,6 +86,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private PlanPagerAdapter adapter;
     private int days;
     private String selectDays;
+    private boolean GALLERY_CHECK_MAIN;
 
     private ArrayList< ArrayList<RealtimeData> > realTimeDataArrayList=new ArrayList<>();
     private List<List<PlanPhotoData>> planPhotoArrayList;
@@ -91,6 +107,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private ImageButton btn_back_inPlanMain;
     private ImageButton  planschedulebtn;
     private ImageButton btn_invitePlanItem;
+    private ImageButton btn_addGalleryImg;
     private ImageButton btn_deletephoto;
     private ImageButton btn_downloadphoto;
     private ImageButton btn_photoselectmenu;
@@ -131,6 +148,11 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         days = (int) planItem.getDayNum();
         selectDays = planItem.getSelectedDays();
+        if(planItem.getGalleryCheck() == 1){
+            GALLERY_CHECK_MAIN = true;
+        }else{
+            GALLERY_CHECK_MAIN = false;
+        }
         col_day = new String[days];
         col_day_firebase = new String[days];
         for (int i = 0; i < days; i++) {
@@ -144,6 +166,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         btn_deletephoto=(ImageButton) findViewById(R.id.btn_deletephoto);
         btn_downloadphoto=(ImageButton) findViewById(R.id.btn_downloadphoto);
         btn_photoselectmenu=(ImageButton) findViewById(R.id.btn_photoselectmenu);
+        btn_addGalleryImg=(ImageButton) findViewById(R.id.btn_add_galleryImg);
 
         btn_back_inPlanMain.setOnClickListener(this);
         planschedulebtn.setOnClickListener(this);
@@ -151,6 +174,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         btn_deletephoto.setOnClickListener(this);
         btn_downloadphoto.setOnClickListener(this);
         btn_photoselectmenu.setOnClickListener(this);
+        btn_addGalleryImg.setOnClickListener(this);
 
         for(int i=0; i<days ; i++){
             ArrayList<RealtimeData> EmptyRealTimeData=new ArrayList<RealtimeData>();
@@ -332,6 +356,10 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             case R.id.btn_photoselectmenu:
                 Log.i(TAG, "not 구현");
                 break;
+
+            case R.id.btn_add_galleryImg:
+                openGallery();
+                break;
         }
     }
 
@@ -387,10 +415,47 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         startActivityForResult(intent,RC_PLAN_MAIN);
     }
 
+    private void openGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK); // 사진 선택
+        //Intent intent = new Intent("android.intent.action.MULTIPLE_PICK");
+        intent.setType("image/*"); //이미지만 보이게
+        //intent.setType(MediaStore.Images.Media.CONTENT_TYPE);
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        //intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        //intent.setAction("android.intent.action.MULTIPLE_PICK");
+        startActivityForResult(Intent.createChooser(intent,"Select Picture"),RC_PLAN_MAIN);
+        //intent.setData(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+
+        //intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,"image/*");
+
+        //startActivityForResult(intent, RC_PLAN_MAIN);
+    }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == RC_PLAN_MAIN){
+            if(resultCode == RESULT_OK){
+                if(data != null //&& data.getData() != null
+                 ){
+                    if(data.getClipData() == null){
+                        Log.i(TAG, "----다중 선택이 불가능---- :");
+                    }
+                    Uri uri = data.getData();
+                    Log.i(TAG, "----uri of selected img---- :"  + uri.toString());
+                    ClipData clipData = data.getClipData();
+                    Log.i(TAG, "----number of selected img---- :"  + data.getClipData().getItemCount());
+                    //Uri selectedImageUri = clipData.getItemAt(0).getUri();
+                    GooglePhotoReference googlePhotoReference=(GooglePhotoReference) getApplication();
+                    Context context=this;
+                    GalleryUploadRunable galleryUploadRunable = new GalleryUploadRunable(this, planItem, data, googlePhotoReference);
+                    Log.i(TAG, "----galleryUploadRunable implement---- :" );
+                    CompletableFuture.runAsync(galleryUploadRunable);
+
+                }else{
+                    Log.i(TAG, "----사진 데이터가 없음---- :" );
+                }
+            }
             if(resultCode == EditPlanScheduleChange.RC_EDIT_PLAN_DEL){
                 Log.i(TAG,"----onActivityResult:MainDEL----");
 

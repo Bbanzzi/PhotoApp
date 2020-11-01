@@ -49,6 +49,7 @@ public class PlanScheduleRecyclerAdapter extends  AbstractTableAdapter<ColumnHea
             cell_container = itemView.findViewById(R.id.cell_container);
             cell_textview = itemView.findViewById(R.id.cell_data);
 
+
         }
     }
 
@@ -94,24 +95,21 @@ public class PlanScheduleRecyclerAdapter extends  AbstractTableAdapter<ColumnHea
 
     //여기 cellItemModel Object에서 Cell로 변경
     @Override
-    public void onBindCellViewHolder(AbstractViewHolder holder, Cell cellItemModel, int columnPosition, int rowPosition ) {
+    public void onBindCellViewHolder(@NonNull AbstractViewHolder holder, Cell cellItemModel, int columnPosition, int rowPosition ) {
 
         Cell cell = (Cell) cellItemModel;
-
-        // Get the holder to update cell item text
         MyCellViewHolder viewHolder = (MyCellViewHolder) holder;
-
-        /* 이거 왜안됨
-        if(columnPosition % 2 == 1){
-            viewHolder.cell_container.setBackgroundColor(Color.parseColor("#000000"));
-        }
-         */
 
         viewHolder.cell_textview.setText(cell.getPlaceText());
 
+
         if( cell.getPlaceText() == "-"){
             viewHolder.cell_textview.setVisibility(View.INVISIBLE);
+        }else{
+            viewHolder.cell_textview.setVisibility(View.VISIBLE);
         }
+
+
 
 
         // If your TableView should have auto resize for cells & columns.
