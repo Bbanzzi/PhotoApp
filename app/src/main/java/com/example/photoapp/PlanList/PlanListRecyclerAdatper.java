@@ -107,7 +107,7 @@ public class PlanListRecyclerAdatper extends RecyclerView.Adapter<PlanListRecycl
         //holder.image.setBackground(drawable);
         holder.textview_plantitle.setText(item.getPlanTitle());
         holder.textview_dates.setText(item.getStartNEndDates());
-        holder.textview_personnel.setText("인원 : " +item.getPlanPersonnel());
+        holder.textview_personnel.setText("인원 : " + item.getNowPerson() + "(" +item.getPlanPersonnel() + ")");
     }
 
     @Override

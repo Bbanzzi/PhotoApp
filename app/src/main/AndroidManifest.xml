@@ -24,8 +24,7 @@
         <activity
             android:name=".PlanSchedule.EditPlanScheduleChange"
             android:screenOrientation="portrait"
-            android:theme="@style/AppThemeNo"/>
-
+            android:theme="@style/AppThemeNo" />
         <activity
             android:name=".PlanList.SettingActivity"
             android:screenOrientation="portrait"
@@ -96,8 +95,7 @@
         <activity
             android:name=".PlanMain.Photo.PhotoMainActivity"
             android:screenOrientation="portrait"
-            android:theme="@style/AppTheme_photoMain"/>
-
+            android:theme="@style/AppTheme_photoMain" />
     </application>
 
 </manifest>

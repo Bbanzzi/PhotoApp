@@ -1,5 +1,6 @@
 package com.example.photoapp.PlanMain;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -13,7 +14,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -37,6 +41,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.viewpager.widget.ViewPager;
 
@@ -65,6 +70,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.dynamiclinks.ShortDynamicLink;
 
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -386,12 +393,20 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                         public void onComplete(@NonNull Task<ShortDynamicLink> task) {
                             Map<String, Object> link=new HashMap<>();
                             link.put("dynamicLink", planItem.getDynamicLink());
+                            Log.i(TAG, "-------str_dynamic1------ : " + planItem.getDynamicLink());
                             dbReference.getDbPlansRef().child(planItem.getKey()).updateChildren(link);
                             dbReference.getDbUserPlansRef().child(planItem.getKey()).updateChildren(link);
                         }
                     });
                 }
-                break;
+                String str_dynamic = planItem.getDynamicLink();
+                Log.i(TAG, "-------str_dynamic------ : " + str_dynamic);
+                ClipData clipData = ClipData.newPlainText("text",str_dynamic);
+                ClipboardManager clipboardManager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+                clipboardManager.setPrimaryClip(clipData);
+                Toast.makeText(this, "링크가 복사되었습니다",Toast.LENGTH_SHORT).show();
+
+            break;
 
             case R.id.btn_deletephoto:
                 deleteTrashPhotos();
@@ -464,19 +479,20 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     }
 
     private void openGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK); // 사진 선택
-        //Intent intent = new Intent("android.intent.action.MULTIPLE_PICK");
+
+        if(ActivityCompat.checkSelfPermission(PlanMainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED){
+
+            ActivityCompat.requestPermissions(PlanMainActivity.this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},100);
+            return;
+        }
+
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT); // 사진 선택
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);
         intent.setType("image/*"); //이미지만 보이게
-        //intent.setType(MediaStore.Images.Media.CONTENT_TYPE);
-        intent.setAction(Intent.ACTION_GET_CONTENT);
-        //intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        //intent.setAction("android.intent.action.MULTIPLE_PICK");
         startActivityForResult(Intent.createChooser(intent,"Select Picture"),RC_PLAN_MAIN);
-        //intent.setData(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 
-        //intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,"image/*");
-
-        //startActivityForResult(intent, RC_PLAN_MAIN);
     }
 
     @Override
@@ -484,20 +500,43 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == RC_PLAN_MAIN){
             if(resultCode == RESULT_OK){
+                List<Bitmap> bitmaps = new ArrayList<>();
+
                 if(data != null //&& data.getData() != null
                  ){
+                    /*
                     if(data.getClipData() == null){
-                        Log.i(TAG, "----다중 선택이 불가능---- :");
+                        Log.i(TAG, "----다중선택 안함---- :");
+                        Uri imageUri = data.getData();
+                        try {
+                            InputStream is = getContentResolver().openInputStream(imageUri);
+                            Bitmap bitmap = BitmapFactory.decodeStream(is);
+                            bitmaps.add(bitmap);
+
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }else{
+                        ClipData clipData = data.getClipData();
+                        for(int i =0; i<clipData.getItemCount(); i++){
+                            Uri imageUri = clipData.getItemAt(i).getUri();
+                            try {
+                                InputStream is = getContentResolver().openInputStream(imageUri);
+                                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                                bitmaps.add(bitmap);
+
+                            } catch (FileNotFoundException e) {
+                                e.printStackTrace();
+                            }
+                        }
                     }
-                    Uri uri = data.getData();
-                    Log.i(TAG, "----uri of selected img---- :"  + uri.toString());
-                    ClipData clipData = data.getClipData();
-                    //Log.i(TAG, "----number of selected img---- :"  + data.getClipData().getItemCount());
-                    //Uri selectedImageUri = clipData.getItemAt(0).getUri();
+
+                     */
+
                     GooglePhotoReference googlePhotoReference=(GooglePhotoReference) getApplication();
                     Context context=this;
                     GalleryUploadRunable galleryUploadRunable = new GalleryUploadRunable(this, planItem, data, googlePhotoReference,nation_name);
-                    Log.i(TAG, "----galleryUploadRunable implement---- :" );
+
                     CompletableFuture.runAsync(galleryUploadRunable);
 
                 }else{

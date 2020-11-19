@@ -56,6 +56,7 @@ public class CreatePlanActivity extends AppCompatActivity{
     private Boolean galleryCheck = false;
     private Boolean radioCheck;
     private static int pos_nation;
+    private int now_person;
 
     private DatabaseReferenceData dbReference;
 
@@ -89,10 +90,12 @@ public class CreatePlanActivity extends AppCompatActivity{
         gettitle=(EditText)findViewById(R.id.edittext_gettitle);
         ImageButton buttonNext=(ImageButton) findViewById(R.id.button_next);
 
+        now_person = 1;
         if(CheckEdit == 1){
             PlanItem planItem_intent = intent.getExtras().getParcelable("planItem");
             String personNum = String.valueOf(planItem_intent.getPlanPersonnel());
             String endDates_str = "~ " + planItem_intent.getEndDates_str();
+            now_person = planItem_intent.getNowPerson();
 
             gettitle.setText(planItem_intent.getPlanTitle());
             getdest.setSelection(planItem_intent.getPosNation());
@@ -277,6 +280,8 @@ public class CreatePlanActivity extends AppCompatActivity{
                 planItem.setAlbumId(albumInfo.get("AlbumId"));
                 planItem.setAlbumTitle(albumInfo.get("AlbumTitle"));
                 planItem.setAlbumSharedToken(albumInfo.get("AlbumSharedToken"));
+                planItem.setNowPerson(now_person);
+
                 int galleryCheck_int=0;
                 //if구문 수정
                 if(galleryCheck) {

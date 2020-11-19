@@ -49,6 +49,7 @@ public class GalleryUploadRunable implements Runnable {
             MediaStore.Images.Media.DATE_ADDED
     };
     private Uri images = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+    private Uri gallery_image = MediaStore.Images.Media.INTERNAL_CONTENT_URI;
     private Context context;
     private PlanItem planItem;
     private GooglePhotoReference googlePhotoReference;
@@ -147,6 +148,22 @@ public class GalleryUploadRunable implements Runnable {
         Log.i(TAG,"Start Dates :"  +  startDatesLong + " End Dates :"+ endDatesLong);
         uripaths=new ArrayList<>();
 
+        int num_data;
+        if(data.getClipData() != null){
+            num_data = data.getClipData().getItemCount();
+        }else{
+            num_data = 1;
+        }
+
+        List<Uri> uripathCol = new ArrayList<>();
+        if(data.getClipData() != null) {
+            ClipData clipData = data.getClipData();
+            for (int i = 0; i < clipData.getItemCount(); i++) {
+                Uri uriImg = clipData.getItemAt(i).getUri();
+                uripathCol.add(uriImg);
+            }
+        }
+
         Cursor cur = context.getContentResolver().query(images,
                 projection, // Which columns to return
                 null,       // Which rows to return (all rows)
@@ -156,12 +173,14 @@ public class GalleryUploadRunable implements Runnable {
                 //MediaStore.Images.Media.DATE_TAKEN + " ASC"
         );
 
+
         int count=0;
         int idcolumn = 0;
         if (cur.moveToFirst()) {
             String Id;
             String Date_added;
             String[] FileName;
+            Uri uriImage;
 
             int IdColumn = cur.getColumnIndex(
                     MediaStore.Images.Media._ID);
@@ -175,7 +194,11 @@ public class GalleryUploadRunable implements Runnable {
                 FileName = cur.getString(FileNameColumn).split("\\.");
                 //Path of Images
                 //Uri uriImage = Uri.withAppendedPath(images, String.valueOf(Id));
-                Uri uriImage = data.getData();
+                if(data.getClipData() == null) {
+                    uriImage = data.getData();
+                }else{
+                    uriImage = data.getClipData().getItemAt(count).getUri();
+                }
                 try {
                     //InputStream inputStream = context.getContentResolver().openInputStream(uriImage);
                     ExifInterface exif = new ExifInterface(PathUtils.getPath(this.context, uriImage));
@@ -194,21 +217,19 @@ public class GalleryUploadRunable implements Runnable {
                         count++;
                     }else{
                         Log.i(TAG, "날짜가 다릅니다");
-                        Toast.makeText(this.context,"날짜가 다릅니다",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context,"날짜가 다릅니다",Toast.LENGTH_SHORT).show();
                     }
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                if( count == num_data){
+                    break;
+                }
                 // Do something with the values.
-            } while (cur.moveToNext() && (2>count));
-            //갤러리에서 선택한 사사을 하나씩만 올리기때문에
-            //find해서 올리기 시작한 위치를 찾을 필요가 없다
-            //count도 필요 없이 그냥 한번씩만 시작하면 될듯
-            //다중선택이 버전이 낮아서 안됨
+            } while (cur.moveToNext() );
         }
         Log.i(TAG, "----count value---- : " + count);
-        Log.i(TAG, "----IdColumn value---- : " + idcolumn );
 
     }
 
