@@ -25,7 +25,9 @@ public class PlanMainSchedule {
 
     private OnScheduleReadInterface onScheduleListener;
     public interface OnScheduleReadInterface{
-        void onDataAdded();
+        void onDataChanged(int days);
+        void onDataAdded(int days);
+        void onDataRemoved(int days);
         void onFailed();
     }
 
@@ -35,6 +37,7 @@ public class PlanMainSchedule {
         this.onScheduleListener =onScheduleListener;
     }
 
+    /*
     public void registerReadValueEventListener(){
         ValueEventListener valueEventListener=new ValueEventListener() {
             @Override
@@ -58,14 +61,7 @@ public class PlanMainSchedule {
 
         dbReference.addListenerForSingleValueEvent(valueEventListener);//orderByChild("time").
     }
-    /*
-    private static OnScheduleReadInterface onScheduleListener;
-    public interface OnScheduleReadInterface{
-        void onChildAdded();
-        void onChildChanged();
-        void onChildRemoved();
-        void onChildFailed();
-    }
+    */
 
     // data 읽어오는 비동기화 작업
     public void registerReadChildEventListener() {
@@ -86,8 +82,8 @@ public class PlanMainSchedule {
                 }
                 realTimeDataArrayList.get(index-1).clear();
                 realTimeDataArrayList.get(index-1).addAll(addRealTimeData);
-                onScheduleListener.onChildChanged();
                 Log.i(TAG, "----onChildchanhed---- : " + dataSnapshot.getKey() );
+                onScheduleListener.onDataChanged(index-1);
             }
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName){
@@ -101,15 +97,15 @@ public class PlanMainSchedule {
                         realTimeDataArrayList.get(day-1).add(realtimeData);
                     }
                 }
-                onScheduleListener.onChildAdded();
+                onScheduleListener.onDataChanged(day-1);
                 Log.i(TAG, "----onChildAdded---- : " + snapshot.getKey() );
             }
             @Override
             public void onChildRemoved(@NonNull DataSnapshot snapshot) {
                 Log.i(TAG,"----onChildRemoved----" + snapshot.getKey());
                 int index = Character.getNumericValue(snapshot.getKey().charAt(0));
-                realTimeDataArrayList.get(index-1).remove(1);
-                onScheduleListener.onChildRemoved();
+                realTimeDataArrayList.get(index-1).clear();
+                onScheduleListener.onDataRemoved(index -1);
 
             }
             @Override
@@ -118,19 +114,16 @@ public class PlanMainSchedule {
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                onScheduleListener.onChildFailed();
                 Log.i(TAG,"----onCancelled----");
             }
         };
-
-        dbReference.getDbPlanScheduleRef().child(child).//orderByChild("time").
+        dbReference.//orderByChild("time").
                 addChildEventListener(childEventListener);
     }
 
     public void unregisterReadChildEventListener(){
-        dbReference.getDbPlanScheduleRef().child(child).//orderByChild("time").
+        dbReference.//orderByChild("time").
                     removeEventListener(childEventListener);
     }
-    
-     */
+
 }

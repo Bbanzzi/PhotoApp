@@ -46,6 +46,7 @@ import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanMain.Photo.PhotoDownloadRequest;
 import com.example.photoapp.PlanMain.PhotoWork.GalleryUploadRunable;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoDeleteRequest;
+import com.example.photoapp.PlanMain.PhotoWork.PhotoSortRequest;
 import com.example.photoapp.PlanMain.PlanWork.PlanDynamicLink;
 import com.example.photoapp.PlanMain.PlanWork.PlanMainPhotoDelete;
 import com.example.photoapp.PlanMain.PlanWork.PlanMainPhotoDownload;
@@ -87,8 +88,11 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private int days;
     private String selectDays;
     private boolean GALLERY_CHECK_MAIN;
+    // 화면에 보이는 realtimedata
+    private ArrayList< ArrayList<RealtimeData>> nowRealTimeDataArrayList=new ArrayList<>();
+    // background작업을 위한 realtimedata
+    private ArrayList< ArrayList<RealtimeData>> syncRealTimeDataArrayList=new ArrayList<>();
 
-    private ArrayList< ArrayList<RealtimeData> > realTimeDataArrayList=new ArrayList<>();
     private List<List<PlanPhotoData>> planPhotoArrayList;
     private List<Map<String, Long>> trashPhotos;
 
@@ -126,8 +130,10 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private PlanMainPhotoDownload planMainPhotoDownload;
     //Schedule Dbread를 위한 class 객체
     private PlanMainSchedule planMainSchedule;
+    private boolean firstSchedule=true; // 처음읽는 거랑 나중에 읽는거 구분을 위한 작업
     //Photo Listingd을 위한 class + network receiver
     private PlanMainConnection planMainConnection;
+    private boolean firstListing=false;
     //Photo Listing
     private PlanMainPhotoListing planMainPhotoListing;
 
@@ -180,15 +186,16 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         for(int i=0; i<days ; i++){
             ArrayList<RealtimeData> EmptyRealTimeData=new ArrayList<RealtimeData>();
-            EmptyRealTimeData.add(new RealtimeData());
-            realTimeDataArrayList.add(EmptyRealTimeData);
+            //EmptyRealTimeData.add(new RealtimeData());
+            syncRealTimeDataArrayList.add(EmptyRealTimeData);
+            nowRealTimeDataArrayList.add(EmptyRealTimeData);
         }
 
         // 화면 생성
         setActionBar();
         viewPager = (ViewPager) findViewById(R.id.viewPager);
 
-        adapter = new PlanPagerAdapter(getSupportFragmentManager(),planItem, realTimeDataArrayList, 1);
+        adapter = new PlanPagerAdapter(getSupportFragmentManager(),planItem, nowRealTimeDataArrayList, 1);
         adapter.setDays(days);
         //뷰 페이저
         viewPager.setOffscreenPageLimit(5);
@@ -216,18 +223,42 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
         //PlanSchedule Listener
         //일단 동기화는 주석처리
-        planMainSchedule=new PlanMainSchedule(dbReference.getDbPlanScheduleRef().child(planItem.getKey()), realTimeDataArrayList, new PlanMainSchedule.OnScheduleReadInterface() {
+        planMainSchedule=new PlanMainSchedule(dbReference.getDbPlanScheduleRef().child(planItem.getKey()), syncRealTimeDataArrayList, new PlanMainSchedule.OnScheduleReadInterface() {
             @Override
-            public void onDataAdded() {
-                adapter.notifyDataSetChanged();
+            public void onDataChanged(int days) {
+                // firebase구조상 이미 한 날짜에 계획이 두개이상 있고 추가하거나 삭제하면 이것 실행
+                if(!firstSchedule) {
+                    if(planPhotoArrayList.get(days)!=null)
+                        PhotoSortRequest.planScheduleChanged(planItem, days, syncRealTimeDataArrayList.get(days), planPhotoArrayList.get(days));
+                    nowRealTimeDataArrayList.remove(days);
+                    nowRealTimeDataArrayList.add((ArrayList<RealtimeData>) syncRealTimeDataArrayList.get(days).clone());
+                    adapter.notifyDataSetChanged();
+                }
             }
-
+            // 계획이 하나도 없을때 아래 실행인데 필요 없을듯?
+            @Override
+            public void onDataAdded(int days) {
+                //위와 다르지 않을듯?
+                //if(!firstSchedule)
+                    //PhotoSortRequest.planScheduleAdded();
+            }
+            // 계획이 모두 사라지면 다 지우고 list하면 된다.
+            @Override
+            public void onDataRemoved(int days) {
+                if(!firstSchedule){
+                    syncRealTimeDataArrayList.get(days).clear();
+                    if(planPhotoArrayList.get(days)!=null)
+                        PhotoSortRequest.planScheduleRemoved(syncRealTimeDataArrayList.get(days), planPhotoArrayList.get(days));
+                    adapter.notifyDataSetChanged();
+                }
+            }
             @Override
             public void onFailed() {
 
             }
         });
         //Listing 작업
+        planMainSchedule.registerReadChildEventListener();
         planMainPhotoListing=new PlanMainPhotoListing(this, planItem,
                 dbReference, (GooglePhotoReference)getApplication(),this);
 
@@ -236,7 +267,9 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             @Override
             public void onConnected() {
                 try {
-                    planMainPhotoListing.listingAllPhotos();
+                    if(!firstListing)
+                        planMainPhotoListing.listingAllPhotos();
+                    firstListing=true;
                 } catch (ExecutionException | InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -253,72 +286,23 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         planMainConnection.registerNetworkReceiver();
     }
 
-    private String onSearchNation(int posNation) {
-        String gmt_plus_str = null;
-        switch (posNation) {
-            case 0 :
-                Toast.makeText(getApplicationContext(), "나라가 등록되지 않았습니다.",Toast.LENGTH_SHORT).show();
-                break;
-            case 1 :
-                gmt_plus_str = "+09:00";
-                break;
-            case 2 :
-                gmt_plus_str = "+09:00";
-                break;
-            case 3 :
-                gmt_plus_str = "+08:00";
-                break;
-            case 4 :
-                gmt_plus_str = "-05:00";
-                break;
-            case 5 :
-                gmt_plus_str = "-08:00";
-                break;
-            case 6 :
-                gmt_plus_str = "-06:00";
-                break;
-            case 7 :
-                gmt_plus_str = "+00:00";
-                break;
-            case 8 :
-                gmt_plus_str = "+01:00";
-                break;
-            case 9 :
-                gmt_plus_str = "+02 :00";
-                break;
-            case 10 :
-                gmt_plus_str = "+11:00";
-                break;
-            case 11 :
-                gmt_plus_str = "+04:00";
-                break;
-            case 12 :
-                gmt_plus_str = "+01:00";
-                break;
-        }
-        return gmt_plus_str;
-    }
-
-
     @Override
     public void onPause(){
         super.onPause();
+        firstSchedule=false;
         Log.i(TAG, "----onPause main----");
     }
-
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "----onDestroy main----");
-
         //다운로드 BroadcastReceiver unregister
         planMainPhotoDownload.unregisterDownloadManagerReceiver();
         //PlanSchedule Listener unregister
-        //planMainSchedule.unregisterReadChildEventListener();
+        planMainSchedule.unregisterReadChildEventListener();
         //PhotoConnection
         planMainConnection.unregisterNetworkReceiver();
-
         // deleteChildListener 제거
         if(planMainPhotoListing.registerChileEventListener()) planMainPhotoListing.removeDeleteChildEventListener();
     }
@@ -334,15 +318,16 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         super.onStart();
         //listener 제거?
         Log.i(TAG, "----onStart----");
-        planMainSchedule.registerReadValueEventListener();
     }
 
-    // Photo Listing listner에 따른 작업
+    // Photo Listing listener에 따른 작업
     @Override
     public void onListed(List<List<PlanPhotoData>> lists, List<Map<String, Long>> trashPhotos) {
+        this.planPhotoArrayList=lists;
         this.trashPhotos=trashPhotos;
-        planMainPhotoListing.addDeleteChileEventListener(realTimeDataArrayList);
-        planMainPhotoListing.sortingAllPhotos(realTimeDataArrayList, lists);
+        nowRealTimeDataArrayList= (ArrayList<ArrayList<RealtimeData>>) syncRealTimeDataArrayList.clone();
+        planMainPhotoListing.addDeleteChileEventListener(nowRealTimeDataArrayList);
+        planMainPhotoListing.sortingAllPhotos(nowRealTimeDataArrayList, lists);
     }
     @Override
     public void onSorted() {
@@ -357,9 +342,9 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     public void onUpdated() {
         adapter.notifyDataSetChanged();
     }
+
     @Override
     public void onFailed() {
-
     }
 
     @Override
@@ -576,6 +561,52 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         }
     }
 
+    private String onSearchNation(int posNation) {
+        String gmt_plus_str = null;
+        switch (posNation) {
+            case 0 :
+                Toast.makeText(getApplicationContext(), "나라가 등록되지 않았습니다.",Toast.LENGTH_SHORT).show();
+                break;
+            case 1 :
+                gmt_plus_str = "+09:00";
+                break;
+            case 2 :
+                gmt_plus_str = "+09:00";
+                break;
+            case 3 :
+                gmt_plus_str = "+08:00";
+                break;
+            case 4 :
+                gmt_plus_str = "-05:00";
+                break;
+            case 5 :
+                gmt_plus_str = "-08:00";
+                break;
+            case 6 :
+                gmt_plus_str = "-06:00";
+                break;
+            case 7 :
+                gmt_plus_str = "+00:00";
+                break;
+            case 8 :
+                gmt_plus_str = "+01:00";
+                break;
+            case 9 :
+                gmt_plus_str = "+02 :00";
+                break;
+            case 10 :
+                gmt_plus_str = "+11:00";
+                break;
+            case 11 :
+                gmt_plus_str = "+04:00";
+                break;
+            case 12 :
+                gmt_plus_str = "+01:00";
+                break;
+        }
+        return gmt_plus_str;
+    }
+
     public void showMessage(){
         builder = null;
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -652,15 +683,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         }
     }
 
-
-    private final static Comparator<RealtimeData> timeComparator = new Comparator<RealtimeData>() {
-        private final Collator collator = Collator.getInstance();
-        @Override
-        public int compare(RealtimeData o1, RealtimeData o2) {
-            return collator.compare(o1.getTime(),o2.getTime());
-        }
-    };
-
     // Download 코드
     private void downloadSelectedPhoto(){
 
@@ -682,7 +704,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         dialog.setPositiveButton("확인", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                for(ArrayList<RealtimeData> realtimeDataList: realTimeDataArrayList){
+                for(ArrayList<RealtimeData> realtimeDataList: nowRealTimeDataArrayList){
                     for(RealtimeData realtimeData : realtimeDataList){
                         for (PlanPhotoData planPhotoData : realtimeData.getPhotoDataList()) {
                             if (planPhotoData.getCheck()) {
@@ -720,7 +742,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 int day_index=0;
-                for(ArrayList<RealtimeData> realtimeDataList: realTimeDataArrayList){
+                for(ArrayList<RealtimeData> realtimeDataList: nowRealTimeDataArrayList){
                     for(RealtimeData realtimeData : realtimeDataList){
                         Iterator<PlanPhotoData> iterator=realtimeData.getPhotoDataList().iterator();
                         while (iterator.hasNext()) {

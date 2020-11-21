@@ -73,7 +73,8 @@ public class PlanMainPhotoListing {
                         (CompletableFuture.supplyAsync(new Supplier< List<Map<String,Long>>>() {
                             @Override
                             public List<Map<String, Long>> get() {
-                                return trashPhotos=PlanMainPhotoDelete.addDeleteSingleValueEvent(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), planItem);
+                                return trashPhotos=PlanMainPhotoDelete.addDeleteSingleValueEvent(
+                                        dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), planItem);
                             }
                         })
                         , new BiFunction<List<List<PlanPhotoData>>, List<Map<String, Long>>, List<List<PlanPhotoData>>>() {
@@ -83,7 +84,7 @@ public class PlanMainPhotoListing {
                         onListingListener.onListed(lists, trashPhotos);
                         return lists;
                     }
-                });
+                        });
     }
 
     //다음 sorting

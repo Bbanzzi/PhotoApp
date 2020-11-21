@@ -13,6 +13,7 @@ import com.google.api.gax.rpc.ApiException;
 import com.google.common.base.Suppliers;
 import com.google.photos.library.v1.internal.InternalPhotosLibraryClient;
 import com.google.photos.library.v1.proto.ListSharedAlbumsResponse;
+import com.google.photos.library.v1.proto.SearchMediaItemsRequest;
 import com.google.photos.types.proto.Album;
 import com.google.photos.types.proto.ContributorInfo;
 import com.google.photos.types.proto.MediaItem;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.function.Supplier;
+import java.util.logging.Filter;
 
 @RequiresApi(api = Build.VERSION_CODES.N)
 public class PhotoListRequestSupplier implements Supplier<List<List<PlanPhotoData>>> {

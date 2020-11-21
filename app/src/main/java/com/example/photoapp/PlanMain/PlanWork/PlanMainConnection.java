@@ -23,7 +23,6 @@ public class PlanMainConnection {
     private boolean wifiConnected = false;
     private boolean mobileConnected = false;
     private boolean downLoadOnlyWIFI;
-    private boolean messageCheck = false;
 
     // 여러번 신호가 오기때문에 필요함
     private boolean firstConnect=false;
@@ -63,8 +62,9 @@ public class PlanMainConnection {
                 if (capabilities != null) {
                     if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                         wifiConnected = true;
-                    } else if (downLoadOnlyWIFI && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                    } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
                         mobileConnected = true;
+                        Log.i(TAG, "whty04" + mobileConnected );
                     }
                 }
             }
@@ -73,6 +73,7 @@ public class PlanMainConnection {
             if ( networkInfo != null &&  networkInfo.isConnected()) {
                 wifiConnected =  networkInfo.getType() == ConnectivityManager.TYPE_WIFI;
                 mobileConnected =  networkInfo.getType() == ConnectivityManager.TYPE_MOBILE;
+                Log.i(TAG, "whty03" + mobileConnected );
                 checkConnect();
             }
         }
