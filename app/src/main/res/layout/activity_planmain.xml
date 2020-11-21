@@ -54,7 +54,7 @@
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/textview_schedule"
                 app:layout_constraintTop_toTopOf="parent"
-                android:layout_marginStart="22dp"
+                android:layout_marginStart="20dp"
                 tools:text="DAY 나열" />
 
             <ImageButton

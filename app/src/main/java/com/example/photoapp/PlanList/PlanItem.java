@@ -23,6 +23,7 @@ public class PlanItem implements Parcelable {
     private String albumSharedToken;
 
     private int planPersonnel;
+    private int nowPerson;
     private int planDates;
 
     private Calendar startDates;
@@ -48,6 +49,7 @@ public class PlanItem implements Parcelable {
         albumTitle=in.readString();
         albumId=in.readString();
         planPersonnel = in.readInt();
+        nowPerson = in.readInt();
         //galleryCheck = in.readBoolean();
         galleryCheck = in.readInt();
         pos_nation = in.readInt();
@@ -74,6 +76,7 @@ public class PlanItem implements Parcelable {
         this.albumTitle= albumTitle;
         this.albumId=albumId;
         this.planPersonnel=planPersonnel;
+        this.nowPerson=nowPerson;
         this.galleryCheck=galleryCheck;
         this.pos_nation=pos_nation;
 
@@ -89,6 +92,7 @@ public class PlanItem implements Parcelable {
     public void setPlanDest(String planDest) { this.planDest = planDest; }
     public void setAlbumTitle(String albumTitle) { this.albumTitle = albumTitle; }
     public void setPlanPersonnel(int planPersonnel) { this.planPersonnel = planPersonnel; }
+    public void setNowPerson(int nowPerson) {this.nowPerson = nowPerson; }
     public void setPlanDates(int planDates) {this.planDates = planDates;}
     public void setStartDates(long startDatesTimeStamp) { this.startDatesTimeStamp = startDatesTimeStamp; }
     public void setEndDates(long endDatesTimeStamp) { this.endDatesTimeStamp = endDatesTimeStamp; }
@@ -113,6 +117,7 @@ public class PlanItem implements Parcelable {
     public Calendar putStartDates(){ return this.startDates;}
     public Calendar putEndDates(){ return this.endDates;}
     public int getPlanPersonnel(){ return this.planPersonnel;}
+    public int getNowPerson(){ return  this.nowPerson; }
     public long getStartDatesTimeStamp(){ return this.startDatesTimeStamp;}
     public long getEndDatesTimeStamp(){ return this.endDatesTimeStamp;}
     public String getTimezone_id(){ return this.timezone_id;}
@@ -177,6 +182,7 @@ public class PlanItem implements Parcelable {
         dest.writeString(albumTitle);
         dest.writeString(albumId);
         dest.writeInt(planPersonnel);
+        dest.writeInt(nowPerson);
         dest.writeInt(galleryCheck);
         dest.writeInt(pos_nation);
         dest.writeLong(startDates.getTimeInMillis());

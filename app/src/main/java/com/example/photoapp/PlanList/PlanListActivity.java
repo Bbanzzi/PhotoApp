@@ -207,11 +207,25 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
 
                     case R.id.menu_delete:
                         String title = planItemList.get(position).getPlanTitle();
+
+                        int numPerson = planItemList.get(position).getNowPerson();
                         new AlertDialog.Builder(PlanListActivity.this).setTitle(title + " > 앨범 삭제").setMessage("삭제하시겠습니까?")
                                 .setIcon(R.drawable.ic_baseline_delete_24)
                                 .setPositiveButton("예", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
+
+                                        if(numPerson == 1){
+                                            Toast.makeText(getApplication(), "남은 인원은 " + (numPerson-1) + " 명 입니다",Toast.LENGTH_LONG).show();
+                                            dbReference.getDbPlansRef().child(planItemList.get(position).getKey()).removeValue();
+                                            dbReference.getDbPlanScheduleRef().child(planItemList.get(position).getKey()).removeValue();
+                                            if( dbReference.getDbPlanTrashPhotosRef().child(planItemList.get(position).getKey()) != null ) {
+                                                Log.i(TAG,"-----trashphoto------ : " + dbReference.getDbPlanTrashPhotosRef().child(planItemList.get(position).getKey()).toString());
+                                                dbReference.getDbPlanTrashPhotosRef().child(planItemList.get(position).getKey()).removeValue();
+                                            }
+                                        }
+
+                                        planItemList.get(position).setNowPerson(numPerson-1);
                                         dbReference.getDbUserPlansRef().child(planItemList.get(position).getKey()).removeValue();
                                         dbReference.getDbPlanUsersRef().child(planItemList.get(position).getKey()).removeValue();
                                         planItemList.remove(position);
@@ -326,6 +340,7 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
                         if (child.getValue(PlanItem.class).getDynamicLink().equals(link)) {
                             PlanItem planItem = child.getValue(PlanItem.class);
                             planItem.setTimestamptoCalendarDates();
+                            int add_numperson = planItem.getNowPerson();
                             //planItem.setKey(child.getKey());
                             //Log.i(TAG, planItem.getKey());
 
@@ -335,6 +350,9 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
                             dbReference.getDbPlanUsersRef().child(child.getKey()).child(LoginInfoProvider.getUserUID(PlanListActivity.this))
                                     .setValue(LoginInfoProvider.getUserInfoMap(PlanListActivity.this));
                             dbReference.getDbUserPlansRef().child(child.getKey()).setValue(planItem);
+
+                            Log.i("TAG", "------now person----- : " + add_numperson);
+                            planItem.setNowPerson(add_numperson+1);
 
                             break;
 
@@ -397,6 +415,8 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
                         planItem.setTimestamptoCalendarDates();
                         //planItem.setKey(child.getKey());
                         //Log.i(TAG, planItem.getKey());
+                        int add_numperson = planItem.getNowPerson();
+                        planItem.setNowPerson(add_numperson+1);
 
                         // album id가 같은 album이라도 사람마다 다름
                         // plans 에는 owner의 albumid UserPlan에 사람마다 album id를 넣어주는 것이 좋아보임
