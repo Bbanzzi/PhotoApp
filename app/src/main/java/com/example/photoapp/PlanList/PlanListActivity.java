@@ -14,6 +14,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.Toast;
@@ -75,6 +76,14 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        /*
+        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+        layoutParams.flags = WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+        layoutParams.dimAmount = 0f;
+        layoutParams.setTitle("dddd");
+        getWindow().setAttributes(layoutParams);
+
+         */
         setContentView(R.layout.activity_planlist);
         //권한 설정
         checkAndRequestPermissions();
@@ -106,12 +115,18 @@ public class PlanListActivity extends AppCompatActivity implements View.OnClickL
 
         recyclerView = (RecyclerView) findViewById(R.id.recyclerview_planlist);
 
+
         // use this setting to improve performance if you know that changes
         // in content do not change the layout size of the RecyclerView
+
 
         // use a linear layout manager
         layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
+        //배경 흐리게
+
+
+
         planItemList=new ArrayList<PlanItem>();
         //Database 에서 plan목록 받아옴
         searchPlanList();

@@ -236,6 +236,7 @@ public class GalleryUploadRunable implements Runnable {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void UploadRequestGallery() {
+        Log.i(TAG,"----Galleryuploadrequest---- : " );
         for (String uripath : uripaths){
             File file_temp = new File(uripath);
             Log.i(TAG,"----gallery uri22---- : " + uripath);
