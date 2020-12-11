@@ -28,9 +28,13 @@ public class PhotoSortRequest {
     }
 
     public static void planScheduleRemoved(ArrayList<RealtimeData> realTimeDataArrayList, List<PlanPhotoData> lists){
-        realTimeDataArrayList.add(new RealtimeData());
+        realTimeDataArrayList.add(0,new RealtimeData());
         for(PlanPhotoData photo: lists){
             realTimeDataArrayList.get(0).getPhotoDataList().add(photo);
+        }
+
+        for(int i=1; i<realTimeDataArrayList.size(); i++){
+            realTimeDataArrayList.remove(i);
         }
     }
 
@@ -52,13 +56,13 @@ public class PhotoSortRequest {
 
             for( int realTimeData_index = 0 ; realTimeData_index < realTimeDataList.size(); realTimeData_index++) {
                 RealtimeData plan = realTimeDataList.get(realTimeData_index); // 계획
-                Long planTime = getPlanTime(startDates, plan, false); // realtimedate의 Timestamp얻기
+                Long planTime = getPlanTime(startDates, plan, i,false); // realtimedate의 Timestamp얻기
                 // 다음 계획 시간
                 Long nextPlanTime;
                 if (realTimeDataList.size() <= (realTimeData_index + 1)) { // 그날의 마지막 계획일때
-                    nextPlanTime = getPlanTime(startDates, null , true);
+                    nextPlanTime = getPlanTime(startDates, null ,i, true);
                 } else {
-                    nextPlanTime = getPlanTime(startDates, realTimeDataList.get( realTimeData_index + 1), false);
+                    nextPlanTime = getPlanTime(startDates, realTimeDataList.get( realTimeData_index + 1),i, false);
                 }
                 Log.i(TAG,"Place index: " + realTimeData_index +" PLACE : " + plan.getPlace() + " Time :" + planTime + " NEXT TIME :" + nextPlanTime);
 
@@ -87,14 +91,16 @@ public class PhotoSortRequest {
         Log.i(TAG, "Sorting is finished");
     }
 
-    private static Long getPlanTime(Calendar calendar, RealtimeData realTimeData, Boolean lastPlan){
-
+    private static Long getPlanTime(Calendar startDates, RealtimeData realTimeData, int realTimeData_index, Boolean lastPlan){
+        Calendar calendar=(Calendar) startDates.clone();
+        int days=calendar.get(Calendar.DAY_OF_MONTH)+realTimeData_index;
+        Log.i(TAG, "days + : " + days);
+        calendar.set(Calendar.DAY_OF_MONTH, days);
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
         calendar.setTimeZone(TimeZone.getDefault());
 
         if(lastPlan) {
-            int days=calendar.get(Calendar.DAY_OF_MONTH);
             calendar.set(Calendar.DAY_OF_MONTH,days+1);
             calendar.set(Calendar.HOUR_OF_DAY, 0);
             calendar.set(Calendar.MINUTE, 0);
@@ -119,13 +125,14 @@ public class PhotoSortRequest {
         Log.i(TAG, "days" + startDates.get(Calendar.DAY_OF_MONTH));
         for( int realTimeData_index = 0 ; realTimeData_index < realTimeDataList.size(); realTimeData_index++) {
             RealtimeData plan = realTimeDataList.get(realTimeData_index); // 계획
-            Long planTime = getPlanTime(startDates, plan, false); // realtimedate의 Timestamp얻기
+            plan.getPhotoDataList().clear();
+            Long planTime = getPlanTime(startDates, plan, 0 ,false); // realtimedate의 Timestamp얻기
             // 다음 계획 시간
             Long nextPlanTime;
             if (realTimeDataList.size() <= (realTimeData_index + 1)) { // 그날의 마지막 계획일때
-                nextPlanTime = getPlanTime(startDates, null , true);
+                nextPlanTime = getPlanTime(startDates, null ,0 ,true);
             } else {
-                nextPlanTime = getPlanTime(startDates, realTimeDataList.get( realTimeData_index + 1), false);
+                nextPlanTime = getPlanTime(startDates, realTimeDataList.get( realTimeData_index + 1), 0 ,false);
             }
             Log.i(TAG,"Place index: " + realTimeData_index +" PLACE : " + plan.getPlace() + " Time :" + planTime + " NEXT TIME :" + nextPlanTime);
 
@@ -151,6 +158,9 @@ public class PhotoSortRequest {
                 }
             }
         }
+    }
+
+    public static void sortOnePhoto(){
 
     }
 }

@@ -39,10 +39,7 @@ public class SettingPreferenceFragment extends PreferenceFragment implements Sha
     Preference profile;
     Preference logout;
 
-    private GoogleSignInClient mGoogleSignInClient;
     private FirebaseAuth mAuth;
-    //Activity NetWorkActivity;
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -85,7 +82,12 @@ public class SettingPreferenceFragment extends PreferenceFragment implements Sha
     }
 
     public void signOut(){
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+        GoogleSignInClient mGoogleSignInClient = GoogleSignIn.getClient(getContext(), gso);
         LoginInfoProvider.clearUserData(getContext());
+        mGoogleSignInClient.signOut();
         mAuth.signOut();
     }
 

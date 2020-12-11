@@ -8,17 +8,28 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
+import android.service.quicksettings.Tile;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.exifinterface.media.ExifInterface;
 
 import com.example.photoapp.Data.GooglePhotoReference;
 import com.example.photoapp.MainActivity;
 import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanMain.PlanMainActivity;
+import com.example.photoapp.PlanMain.PlanPhotoData;
 import com.example.photoapp.PlanMain.PlanSetting;
+import com.example.photoapp.PlanMain.PlanWork.PlanMainSchedule;
+import com.example.photoapp.R;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.photos.library.v1.PhotosLibraryClient;
 import com.google.photos.library.v1.proto.BatchCreateMediaItemsResponse;
 import com.google.photos.library.v1.proto.NewMediaItem;
@@ -27,6 +38,7 @@ import com.google.photos.library.v1.upload.UploadMediaItemRequest;
 import com.google.photos.library.v1.upload.UploadMediaItemResponse;
 import com.google.photos.library.v1.util.NewMediaItemFactory;
 import com.google.photos.types.proto.MediaItem;
+import com.google.protobuf.Timestamp;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 
@@ -61,19 +73,31 @@ public class GalleryUploadRunable implements Runnable {
     private List<String> uripaths;
     private String uripath1;
     private List<String> filename = new ArrayList<>();
+    private List<List<PlanPhotoData>> planPhotoArrayList;
 
+    private ConstraintLayout layout;
     // 갤러리에서 사진을 올리는것도 사진 시간 지정이 필요한지
     // 시간 범위 제한 안하는게 좋을꺼같은데
     // 사진 앨범에서 가져오는 과정에서 범위 이외에것 들어가면 어떻게 되는지
 
-    public GalleryUploadRunable(Context context, PlanItem planItem, Intent Data, GooglePhotoReference googlePhotoReference, String nameNation){
+    public GalleryUploadRunable(Context context, PlanItem planItem, Intent Data, GooglePhotoReference googlePhotoReference, String nameNation , List<List<PlanPhotoData>> planPhotoArrayList, ConstraintLayout layout){
         this.context=context;
         this.planItem=planItem;
         this.data=Data;
         this.googlePhotoReference=googlePhotoReference;
         this.nameNation=nameNation;
+        this.planPhotoArrayList=planPhotoArrayList;
+        this.layout=layout;
         planSetting= String.valueOf(planItem.getStartDatesTimeStamp()) + String.valueOf(planItem.getEndDatesTimeStamp()) + planItem.getPlanTitle();
     }
+    private onUploadInterface onUploadListener;
+    public interface  onUploadInterface{
+        void onUploaded(int days, int index, long time, String id);
+        void onFailed();
+    }
+
+    public onUploadInterface getOnUploadListener() { return onUploadListener; }
+    public void setOnUploadListener(onUploadInterface onUploadListener) { this.onUploadListener = onUploadListener; }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
@@ -95,6 +119,7 @@ public class GalleryUploadRunable implements Runnable {
             Log.i(TAG,"----gallery uri---- : " + imageUri.toString());
         //}
          */
+        showRunningUploadSnackbar();
         getGalleryPhotosAccordingToDate(planItem.putStartDates(),planItem.putEndDates());
        // findGalleryUploadedFiles();
 
@@ -112,16 +137,8 @@ public class GalleryUploadRunable implements Runnable {
             UploadRequestGallery();
         }
 
-    }
-
-    private void findGalleryUploadedFiles(){
-
-        //TEst용 삭제
-        //PlanSetting.removePhotoUploaded(context,planSetting);
-        if(PlanSetting.getPhotoUploaded(context,planSetting) != null){
-            index=Integer.parseInt(PlanSetting.getPhotoUploaded(context,planSetting)) + 1 ;
-            uripaths=uripaths.subList(index, uripaths.size());
-            Log.i(TAG, "findGalleryCheck : " + uripaths.size() );
+        if(!cancel) {
+            showCompleteUploadSnackbar();
         }
     }
 
@@ -252,6 +269,7 @@ public class GalleryUploadRunable implements Runnable {
 
                 if(uploadResponse.getError().isPresent()){
                     UploadMediaItemResponse.Error error = uploadResponse.getError().get();
+                    onUploadListener.onFailed();
                 }else{
                     String uploadToken = uploadResponse.getUploadToken().get();
                     NewMediaItem newMediaItem = NewMediaItemFactory
@@ -262,7 +280,15 @@ public class GalleryUploadRunable implements Runnable {
                         Status status = itemsResponse.getStatus();
                         if(status.getCode() == Code.OK_VALUE){
                             MediaItem createdItem = itemsResponse.getMediaItem();
-                            PlanSetting.setPhotoUploaded(context, planSetting,index);
+                            Timestamp time=createdItem.getMediaMetadata().getCreationTime();
+                            int day=TimeUtils.getDayIndexFromTime(time.getSeconds() , planItem.putStartDates());
+                            int index= TimeUtils.getPhotoIndexFromTime(planPhotoArrayList.get(day), time.getSeconds());
+                            if(day >=0 && index >= 0 ) {
+                                planPhotoArrayList.get(day).add(index,
+                                        new PlanPhotoData(createdItem.getFilename(), createdItem.getId(), photosLibraryClient.getMediaItem(itemsResponse.getMediaItem().getId()).getBaseUrl(), time));
+                                onUploadListener.onUploaded(day, index, time.getSeconds(), createdItem.getId());
+                            }
+                            Log.i(TAG, "days : " + day + "index : " + index + createdItem.getFilename());
                         }else{
                             //item -> not created. Check the status
                         }
@@ -276,5 +302,47 @@ public class GalleryUploadRunable implements Runnable {
         }
     }
 
+    private Snackbar snackbar;
 
+    //Snackbar
+    private void showRunningUploadSnackbar(){
+        snackbar= Snackbar.make(layout, " 업로드 중입니다. ", Snackbar.LENGTH_INDEFINITE);
+        snackbar.setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE);
+        snackbar.setAction("취소", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                cancelPhotos();
+                snackbar.dismiss();
+            }
+        });
+        ViewGroup contentLay = (ViewGroup) snackbar.getView().findViewById(com.google.android.material.R.id.snackbar_text).getParent();
+        ProgressBar item = new ProgressBar(context);
+        contentLay.addView(item,0);
+        snackbar.show();
+    }
+
+    private boolean cancel=false;
+    // 다운로드를 취소
+    //  취소하면 있던것 까지 전부 사라짐
+    private void cancelPhotos(){
+        cancel=true;
+        uripaths.clear();
+    }
+
+    private void showCompleteUploadSnackbar(){
+        snackbar=Snackbar.make(layout, " 업로드를 완료하였습니다. ", Snackbar.LENGTH_INDEFINITE);
+        snackbar.setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE);
+        snackbar.setAction("확인", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                snackbar.dismiss();
+            }
+        });
+
+        TextView textView = (TextView) snackbar.getView().findViewById(com.google.android.material.R.id.snackbar_text);
+        textView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_baseline_check_24, 0, 0, 0);
+        textView.setCompoundDrawablePadding(context.getResources().getDimensionPixelOffset(R.dimen.snackbar_check_icon_padding));
+        textView.setGravity(Gravity.CENTER);
+        snackbar.show();
+    }
 }

@@ -49,9 +49,11 @@ import com.example.photoapp.Data.DatabaseReferenceData;
 import com.example.photoapp.Data.GooglePhotoReference;
 import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanMain.Photo.PhotoDownloadRequest;
+import com.example.photoapp.PlanMain.PhotoWork.CopyUtils;
 import com.example.photoapp.PlanMain.PhotoWork.GalleryUploadRunable;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoDeleteRequest;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoSortRequest;
+import com.example.photoapp.PlanMain.PhotoWork.TimeUtils;
 import com.example.photoapp.PlanMain.PlanWork.PlanDynamicLink;
 import com.example.photoapp.PlanMain.PlanWork.PlanMainPhotoDelete;
 import com.example.photoapp.PlanMain.PlanWork.PlanMainPhotoDownload;
@@ -99,7 +101,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private ArrayList< ArrayList<RealtimeData>> nowRealTimeDataArrayList=new ArrayList<>();
     // background작업을 위한 realtimedata
     private ArrayList< ArrayList<RealtimeData>> syncRealTimeDataArrayList=new ArrayList<>();
-
     private List<List<PlanPhotoData>> planPhotoArrayList;
     private List<Map<String, Long>> trashPhotos;
 
@@ -137,7 +138,9 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     private PlanMainPhotoDownload planMainPhotoDownload;
     //Schedule Dbread를 위한 class 객체
     private PlanMainSchedule planMainSchedule;
-    private boolean firstSchedule=true; // 처음읽는 거랑 나중에 읽는거 구분을 위한 작업
+    private boolean scheduleChanged=true; // 처음읽는 거랑 나중에 읽는거 구분을 위한 작업
+    private boolean scheduleNotifyed=true;
+    private boolean scheduleMyChanged=false;
     //Photo Listingd을 위한 class + network receiver
     private PlanMainConnection planMainConnection;
     private boolean firstListing=false;
@@ -194,9 +197,10 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         for(int i=0; i<days ; i++){
             ArrayList<RealtimeData> EmptyRealTimeData=new ArrayList<RealtimeData>();
             //EmptyRealTimeData.add(new RealtimeData());
+            EmptyRealTimeData.add(new RealtimeData());
             syncRealTimeDataArrayList.add(EmptyRealTimeData);
-            nowRealTimeDataArrayList.add(EmptyRealTimeData);
         }
+        nowRealTimeDataArrayList = (ArrayList<ArrayList<RealtimeData>>) syncRealTimeDataArrayList.clone();
 
         // 화면 생성
         setActionBar();
@@ -234,13 +238,16 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             @Override
             public void onDataChanged(int days) {
                 // firebase구조상 이미 한 날짜에 계획이 두개이상 있고 추가하거나 삭제하면 이것 실행
-                if(!firstSchedule) {
-                    if(planPhotoArrayList.get(days)!=null)
-                        PhotoSortRequest.planScheduleChanged(planItem, days, syncRealTimeDataArrayList.get(days), planPhotoArrayList.get(days));
+                if(planPhotoArrayList !=null && planPhotoArrayList.get(days)!=null)
+                    PhotoSortRequest.planScheduleChanged(planItem, days, syncRealTimeDataArrayList.get(days), planPhotoArrayList.get(days));
+                if(!scheduleChanged || scheduleMyChanged) {
                     nowRealTimeDataArrayList.remove(days);
-                    nowRealTimeDataArrayList.add((ArrayList<RealtimeData>) syncRealTimeDataArrayList.get(days).clone());
+                    nowRealTimeDataArrayList.add(CopyUtils.oneDayDeepCopy( syncRealTimeDataArrayList.get(days)));
                     adapter.notifyDataSetChanged();
-                }
+                    scheduleNotifyed=true;
+                    scheduleMyChanged=false;
+                }else
+                    scheduleNotifyed=false;
             }
             // 계획이 하나도 없을때 아래 실행인데 필요 없을듯?
             @Override
@@ -252,12 +259,15 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             // 계획이 모두 사라지면 다 지우고 list하면 된다.
             @Override
             public void onDataRemoved(int days) {
-                if(!firstSchedule){
-                    syncRealTimeDataArrayList.get(days).clear();
-                    if(planPhotoArrayList.get(days)!=null)
-                        PhotoSortRequest.planScheduleRemoved(syncRealTimeDataArrayList.get(days), planPhotoArrayList.get(days));
+                if(planPhotoArrayList !=null && planPhotoArrayList.get(days)!=null)
+                    PhotoSortRequest.planScheduleRemoved(syncRealTimeDataArrayList.get(days), planPhotoArrayList.get(days));
+                if(!scheduleChanged){
+                    nowRealTimeDataArrayList.remove(days);
+                    nowRealTimeDataArrayList.add(CopyUtils.oneDayDeepCopy( syncRealTimeDataArrayList.get(days)));
                     adapter.notifyDataSetChanged();
-                }
+                    scheduleNotifyed=true;
+                }else
+                    scheduleNotifyed=false;
             }
             @Override
             public void onFailed() {
@@ -265,10 +275,12 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             }
         });
         //Listing 작업
+
         planMainSchedule.registerReadChildEventListener();
         planMainPhotoListing=new PlanMainPhotoListing(this, planItem,
                 dbReference, (GooglePhotoReference)getApplication(),this);
-
+        // Upload Sync를 위한 database
+        planMainPhotoListing.addUploadChildEventListener();
         //PhotoConnection check
         planMainConnection=new PlanMainConnection(this, new PlanMainConnection.OnConnectionListenerInterface() {
             @Override
@@ -296,7 +308,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     @Override
     public void onPause(){
         super.onPause();
-        firstSchedule=false;
+        scheduleChanged=false;
         Log.i(TAG, "----onPause main----");
     }
 
@@ -311,7 +323,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
         //PhotoConnection
         planMainConnection.unregisterNetworkReceiver();
         // deleteChildListener 제거
-        if(planMainPhotoListing.registerChileEventListener()) planMainPhotoListing.removeDeleteChildEventListener();
+        if(planMainPhotoListing.registerDeleteChildEventListener()) planMainPhotoListing.removeDeleteChildEventListener();
+        if(planMainPhotoListing.registerUploadChildEventListener()) planMainPhotoListing.removeUploadChildEventListener();
     }
 
     @Override
@@ -323,7 +336,14 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     @Override
     public void onStart () {
         super.onStart();
+        scheduleChanged=true;
         //listener 제거?
+        if(!scheduleNotifyed){
+            Log.i(TAG, "----onPause asdfasdfasdf----");
+            nowRealTimeDataArrayList=CopyUtils.deepCopy(syncRealTimeDataArrayList);
+            adapter.notifyDataSetChanged();
+            scheduleNotifyed=true;
+        }
         Log.i(TAG, "----onStart----");
     }
 
@@ -332,8 +352,8 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
     public void onListed(List<List<PlanPhotoData>> lists, List<Map<String, Long>> trashPhotos) {
         this.planPhotoArrayList=lists;
         this.trashPhotos=trashPhotos;
-        nowRealTimeDataArrayList= (ArrayList<ArrayList<RealtimeData>>) syncRealTimeDataArrayList.clone();
-        planMainPhotoListing.addDeleteChileEventListener(nowRealTimeDataArrayList);
+        nowRealTimeDataArrayList= CopyUtils.deepCopy(syncRealTimeDataArrayList);
+        planMainPhotoListing.addDeleteChildEventListener(nowRealTimeDataArrayList);
         planMainPhotoListing.sortingAllPhotos(nowRealTimeDataArrayList, lists);
     }
     @Override
@@ -489,39 +509,30 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
 
                 if(data != null //&& data.getData() != null
                  ){
-                    /*
-                    if(data.getClipData() == null){
-                        Log.i(TAG, "----다중선택 안함---- :");
-                        Uri imageUri = data.getData();
-                        try {
-                            InputStream is = getContentResolver().openInputStream(imageUri);
-                            Bitmap bitmap = BitmapFactory.decodeStream(is);
-                            bitmaps.add(bitmap);
-
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
-                        }
-                    }else{
-                        ClipData clipData = data.getClipData();
-                        for(int i =0; i<clipData.getItemCount(); i++){
-                            Uri imageUri = clipData.getItemAt(i).getUri();
-                            try {
-                                InputStream is = getContentResolver().openInputStream(imageUri);
-                                Bitmap bitmap = BitmapFactory.decodeStream(is);
-                                bitmaps.add(bitmap);
-
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-
-                     */
-
                     GooglePhotoReference googlePhotoReference=(GooglePhotoReference) getApplication();
-                    Context context=this;
-                    GalleryUploadRunable galleryUploadRunable = new GalleryUploadRunable(this, planItem, data, googlePhotoReference,nation_name);
+                    GalleryUploadRunable galleryUploadRunable = new GalleryUploadRunable(this, planItem, data, googlePhotoReference,nation_name, planPhotoArrayList, mainlayout );
+                    galleryUploadRunable.setOnUploadListener(new GalleryUploadRunable.onUploadInterface() {
+                        @Override
+                        public void onUploaded(int days,int index, long time, String id) {
+                            List<Integer> indexs=TimeUtils.getSchedulePhotoIndexFromTime(planItem, days, syncRealTimeDataArrayList.get(days), planPhotoArrayList.get(days).get(index));
+                            Map<String, Object> uploaded=new HashMap<>();
+                            uploaded.put(String.valueOf(days)+time, id);
+                            dbReference.getDbPlanUploadPhotoRef().child(planItem.getKey()).updateChildren(uploaded);
+                            Log.i(TAG, "DAYS : " + days + "PHoto index : " + index + " realtimeIndex : " + indexs.get(0) + " realtime.photolist IndEx : " + indexs.get(1));
+                            //if(indexs.get(0)!=null)
+                               // nowRealTimeDataArrayList.get(days).get(indexs.get(0)).getPhotoDataList().add(indexs.get(1), planPhotoArrayList.get(days).get(index));
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    adapter.notifyDataSetChanged();
+                                }
+                            });
+                        }
+                        @Override
+                        public void onFailed() {
 
+                        }
+                    });
                     CompletableFuture.runAsync(galleryUploadRunable);
 
                 }else{
@@ -532,16 +543,17 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 Log.i(TAG,"----onActivityResult:MainDEL----");
 
                 CHECK_DEL_MAIN = true;
+                scheduleMyChanged=true;
                 String time_i = String.valueOf(data.getExtras().getInt("time"));
                 String day = col_day_firebase[day_check];
                 dbReference.getDbPlanScheduleRef().child(planItem.getKey()).child(day).child(time_i).removeValue();
-
 
             }
             if(resultCode == EditPlanScheduleChange.RC_EDIT_PLAN_CHA){
                 Log.i(TAG,"----onActivityResult:MainCHA----");
 
                 CHECK_CHA_MAIN = true;
+                scheduleMyChanged=true;
                 String hourVal = data.getExtras().getString("hourVal");
                 String minVal =  data.getExtras().getString("minVal");
                 String placeVal = data.getExtras().getString("placeVal");
@@ -570,6 +582,7 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
             if(resultCode == EditPlanScheduleActivity.RC_EDIT_PLAN){
                 Log.i(TAG,"----onActivityResult:MainPLAN----");
                 CHECK_EDIT_MAIN = true;
+                scheduleMyChanged=true;
 
                 String hourVal = data.getExtras().getString("hourVal");
                 String minVal =  data.getExtras().getString("minVal");
@@ -595,7 +608,6 @@ public class PlanMainActivity extends AppCompatActivity implements View.OnClickL
                 String day = col_day_firebase[day_check];
                 dataN.put(String.valueOf(time_add), data_edit);
                 dbDataReference_2.child(day).updateChildren(dataN);
-
             }
         }
     }

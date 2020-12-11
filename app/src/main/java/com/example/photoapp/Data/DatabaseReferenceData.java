@@ -21,6 +21,7 @@ public class DatabaseReferenceData extends Application {
     private DatabaseReference dbUserPlansRef;
     private DatabaseReference dbPlanScheduleRef;
     private DatabaseReference dbPlanTrashPhotosRef;
+    private DatabaseReference dbPlanUploadPhotoRef;
 
     public DatabaseReference getCreateDbPlansRef() { return this.dbCreatePlansRef; }
     public DatabaseReference getCreateDbPlanUsersRef() { return this.dbCreatePlanUsersRef; }
@@ -31,6 +32,7 @@ public class DatabaseReferenceData extends Application {
     public DatabaseReference getDbUserPlansRef() { return dbUserPlansRef; }
     public DatabaseReference getDbPlanScheduleRef() {return dbPlanScheduleRef;}
     public DatabaseReference getDbPlanTrashPhotosRef() {return  dbPlanTrashPhotosRef;}
+    public DatabaseReference getDbPlanUploadPhotoRef() { return dbPlanUploadPhotoRef; }
 
     public DatabaseReferenceData(){}
 
@@ -47,6 +49,7 @@ public class DatabaseReferenceData extends Application {
         dbUserPlansRef = database.getReference("UserPlans").child(LoginInfoProvider.getUserUID(context));
         dbPlanScheduleRef= database.getReference("PlanSchedule");
         dbPlanTrashPhotosRef=database.getReference("PlanTrashPhotos");
+        dbPlanUploadPhotoRef =database.getReference( "PlanUploadPhoto");
     }
 
 }

@@ -1,12 +1,9 @@
 package com.example.photoapp.PlanMain.PlanWork;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.example.photoapp.Data.DatabaseReferenceData;
@@ -15,23 +12,17 @@ import com.example.photoapp.PlanList.PlanItem;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoDeleteRequest;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoListRequestSupplier;
 import com.example.photoapp.PlanMain.PhotoWork.PhotoSortRequest;
-import com.example.photoapp.PlanMain.PhotoWork.PhotoUploadRunnable;
-import com.example.photoapp.PlanMain.PlanMainActivity;
 import com.example.photoapp.PlanMain.PlanPhotoData;
 import com.example.photoapp.PlanSchedule.RealtimeData;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 
-import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class PlanMainPhotoListing {
@@ -99,9 +90,9 @@ public class PlanMainPhotoListing {
         });
     }
 
-    private ChildEventListener childEventListener;
-    public void addDeleteChileEventListener(ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList){
-        PlanMainPhotoDelete.addDeleteChileEventListener(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), planItem, childEventListener, trashPhotos, new PlanMainPhotoDelete.OnTrashDataListener() {
+    private ChildEventListener deleteChildEventListener;
+    public void addDeleteChildEventListener(ArrayList<ArrayList<RealtimeData>> realTimeDataArrayList){
+        PlanMainPhotoDelete.addDeleteChileEventListener(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), planItem, deleteChildEventListener, trashPhotos, new PlanMainPhotoDelete.OnTrashDataListener() {
             @Override
             public void onSuccess(int days, String fileName , long time) {
                 PhotoDeleteRequest.deleteOtherRequest(planItem, realTimeDataArrayList, days, fileName, time);
@@ -114,14 +105,35 @@ public class PlanMainPhotoListing {
             }
         });
     }
-    public boolean registerChileEventListener(){
-        return childEventListener != null;
+    public boolean registerDeleteChildEventListener(){
+        return deleteChildEventListener != null;
     }
-
     public void removeDeleteChildEventListener(){
-        PlanMainPhotoDelete.removeDeleteChildEventListener(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), childEventListener);
+        PlanMainPhotoDelete.removeDeleteChildEventListener(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), deleteChildEventListener);
     }
 
+    private ChildEventListener uploadChildEventListener;
+    public void addUploadChildEventListener(){
+
+        PlanMainPhotoUpload.addUploadChildEventListener(dbReference.getDbPlanUploadPhotoRef().child(planItem.getKey()), planItem, uploadChildEventListener, new PlanMainPhotoUpload.OnUploadPhotoDataListener() {
+            @Override
+            public void onSuccess(int days, long time, String Id) {
+                Log.i(TAG, String.valueOf(days) +time+ Id);
+            }
+
+            @Override
+            public void onFailed(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    public boolean registerUploadChildEventListener(){
+        return uploadChildEventListener != null;
+    }
+    public void removeUploadChildEventListener(){
+        PlanMainPhotoUpload.removeUploadChildEventListener(dbReference.getDbPlanTrashPhotosRef().child(planItem.getKey()), uploadChildEventListener);
+    }
 }
 
 

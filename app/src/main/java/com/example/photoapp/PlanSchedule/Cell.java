@@ -48,7 +48,8 @@ public class Cell {
 
     public String getPlaceText() {
         String text = null;
-        if(!(place==null)) {
+        if(!(place.size() == 0)) {
+            Log.i("TAG","----place val---- : " + place.size());
             text = place.get(0);
             for (int i = 1; i < place.size(); i++) {
                 String text_plus = place.get(i);
